@@ -1,0 +1,118 @@
+/* ========== REACTION BAR ========== */
+.msg-wrapper {
+    position: relative;
+}
+
+.reaction-bar {
+    position: absolute;
+    top: -46px;
+    background: var(--sidebar-light, #ffffff);
+    border: 1px solid var(--border-light, #e9d5ff);
+    border-radius: 24px;
+    padding: 6px 12px;
+    display: none;
+    gap: 4px;
+    box-shadow: 0 12px 32px rgba(196, 113, 237, 0.35);
+    z-index: 50;
+    animation: reactionBarIn 0.2s ease-out;
+    white-space: nowrap;
+}
+
+body.dark .reaction-bar {
+    background: var(--sidebar-dark, #15152b);
+    border-color: var(--border-dark, #2d2d4a);
+}
+
+.msg-wrapper.mine .reaction-bar {
+    right: 0;
+}
+
+.msg-wrapper.theirs .reaction-bar {
+    left: 0;
+}
+
+.msg-wrapper:hover .reaction-bar {
+    display: flex;
+}
+
+.reaction-bar span {
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1;
+    display: inline-block;
+}
+
+.reaction-bar span:hover {
+    transform: scale(1.4) translateY(-2px);
+    background: rgba(196, 113, 237, 0.15);
+}
+
+@keyframes reactionBarIn {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ========== REACTIONS DISPLAY ========== */
+.reactions-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 0 4px;
+}
+
+.reaction-chip {
+    background: rgba(196, 113, 237, 0.15);
+    border: 1.5px solid rgba(196, 113, 237, 0.3);
+    border-radius: 14px;
+    padding: 3px 10px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 700;
+    color: var(--text-light, #1a1a2e);
+    user-select: none;
+    line-height: 1.2;
+}
+
+body.dark .reaction-chip {
+    background: rgba(196, 113, 237, 0.25);
+    color: var(--text-dark, #f5f5ff);
+    border-color: rgba(196, 113, 237, 0.4);
+}
+
+.reaction-chip:hover {
+    transform: scale(1.1);
+    background: rgba(196, 113, 237, 0.3);
+    box-shadow: 0 4px 12px rgba(196, 113, 237, 0.3);
+}
+
+.reaction-chip.mine {
+    background: linear-gradient(135deg, #c471ed, #f5576c);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(196, 113, 237, 0.4);
+}
+
+.reaction-chip.mine:hover {
+    box-shadow: 0 4px 16px rgba(196, 113, 237, 0.6);
+}
+
+.reaction-chip .rc-count {
+    font-size: 11px;
+    opacity: 0.85;
+    font-weight: 800;
+}

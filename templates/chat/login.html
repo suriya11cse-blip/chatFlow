@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - ChatFlow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --wa-green: #25D366;
+            --wa-green-dark: #128C7E;
+            --wa-green-darker: #075E54;
+            --wa-bg: #ECE5DD;
+            --wa-panel: #FFFFFF;
+            --wa-text: #111B21;
+            --wa-text-secondary: #667781;
+            --wa-text-muted: #8696A0;
+            --wa-border: #E9EDEF;
+            --wa-shadow-lg: 0 10px 40px rgba(0,0,0,0.15);
+            --wa-radius-md: 10px;
+            --wa-radius-lg: 14px;
+            --wa-radius-full: 999px;
+            --wa-font: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            font-family: var(--wa-font);
+            background: linear-gradient(135deg, var(--wa-green-darker), var(--wa-green-dark));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .login-container {
+            background: var(--wa-panel);
+            border-radius: var(--wa-radius-lg);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--wa-shadow-lg);
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .logo-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--wa-green-dark);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 16px;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--wa-text);
+            letter-spacing: -0.5px;
+        }
+        .logo-text span { color: var(--wa-green-dark); }
+        .subtitle {
+            font-size: 13.5px;
+            color: var(--wa-text-secondary);
+            margin-top: 6px;
+        }
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+            padding: 10px 14px;
+            border-radius: var(--wa-radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            text-align: center;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .input-group {
+            position: relative;
+        }
+        .input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--wa-text-muted);
+            font-size: 16px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            border: 1px solid var(--wa-border);
+            border-radius: var(--wa-radius-md);
+            background: #F9FAFB;
+            color: var(--wa-text);
+            font-size: 14.5px;
+            font-family: var(--wa-font);
+            outline: none;
+            transition: all 0.15s;
+        }
+        .input-group input::placeholder {
+            color: var(--wa-text-muted);
+        }
+        .input-group input:focus {
+            border-color: var(--wa-green-dark);
+            background: var(--wa-panel);
+            box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.1);
+        }
+        button[type="submit"] {
+            background: var(--wa-green-dark);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: var(--wa-radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        button[type="submit"]:hover {
+            background: var(--wa-green-darker);
+        }
+        button[type="submit"]:active {
+            transform: scale(0.98);
+        }
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13.5px;
+            color: var(--wa-text-secondary);
+        }
+        .link a {
+            color: var(--wa-green-dark);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-area">
+            <div class="logo-icon">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="logo-text">Chat<span>Flow</span></div>
+            <div class="subtitle">Sign in to continue</div>
+        </div>
+
+        {% if error %}
+        <div class="error-msg">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" name="username" placeholder="Username" required autofocus>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            <button type="submit">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+
+        <div class="link">
+            No account? <a href="/register/">Register</a>
+        </div>
+    </div>
+</body>
+</html>

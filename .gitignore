@@ -1,0 +1,65 @@
+# ==================
+# Environment files
+# ==================
+.env
+*.env
+!.env.example
+
+# ==================
+# Virtual environments
+# ==================
+venv/
+venv_linux/
+.venv/
+env/
+ENV/
+
+# ==================
+# Python
+# ==================
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.so
+
+# ==================
+# Django
+# ==================
+db.sqlite3
+db.sqlite3-journal
+db_backup_*.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# ==================
+# Backups
+# ==================
+backup_phase*/
+backup_*/
+*.bak
+*.tar.gz
+*.zip
+
+# ==================
+# Celery
+# ==================
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
+# ==================
+# IDE / Editors
+# ==================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==================
+# OS
+# ==================
+.DS_Store
+Thumbs.db
+desktop.ini

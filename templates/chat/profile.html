@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile - ChatFlow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --wa-green: #25D366;
+            --wa-green-dark: #128C7E;
+            --wa-green-darker: #075E54;
+            --wa-bg: #ECE5DD;
+            --wa-bg-dark: #0B141A;
+            --wa-panel: #FFFFFF;
+            --wa-panel-dark: #111B21;
+            --wa-header: #F0F2F5;
+            --wa-header-dark: #202C33;
+            --wa-hover: #F5F6F6;
+            --wa-hover-dark: #202C33;
+            --wa-active: #F0F2F5;
+            --wa-active-dark: #2A3942;
+            --wa-border: #E9EDEF;
+            --wa-border-dark: #2A3942;
+            --wa-text: #111B21;
+            --wa-text-dark: #E9EDEF;
+            --wa-text-secondary: #667781;
+            --wa-text-secondary-dark: #8696A0;
+            --wa-text-muted: #8696A0;
+            --wa-text-muted-dark: #667781;
+            --wa-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+            --wa-shadow-lg: 0 2px 5px rgba(11, 20, 26, 0.26);
+            --wa-radius-sm: 7.5px;
+            --wa-radius-md: 10px;
+            --wa-radius-lg: 14px;
+            --wa-radius-full: 999px;
+            --wa-font: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --wa-transition: cubic-bezier(0.1, 0.82, 0.25, 1);
+        }
+        body.dark {
+            --wa-bg: #0B141A;
+            --wa-panel: #111B21;
+            --wa-header: #202C33;
+            --wa-hover: #202C33;
+            --wa-active: #2A3942;
+            --wa-border: #2A3942;
+            --wa-text: #E9EDEF;
+            --wa-text-secondary: #8696A0;
+            --wa-text-muted: #667781;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { font-family: var(--wa-font); background: var(--wa-bg); color: var(--wa-text); min-height: 100vh; font-size: 14.5px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+        body.dark { background: var(--wa-bg-dark); }
+
+        .page-container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--wa-panel);
+            min-height: 100vh;
+            box-shadow: 0 1px 3px rgba(11, 20, 26, 0.13);
+        }
+        body.dark .page-container { background: var(--wa-panel); }
+
+        .page-header {
+            background: var(--wa-header);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--wa-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        body.dark .page-header { background: var(--wa-header); }
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .back-btn:hover { background: var(--wa-hover); }
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--wa-text);
+            flex: 1;
+        }
+
+        .profile-header {
+            padding: 32px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .profile-avatar-wrapper {
+            position: relative;
+            width: 130px;
+            height: 130px;
+        }
+        .profile-avatar-large {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--wa-green-dark), var(--wa-green));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 48px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 4px 12px rgba(11, 20, 26, 0.15);
+        }
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--wa-green-dark);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            border: 3px solid var(--wa-panel);
+            transition: transform 0.15s;
+        }
+        .avatar-overlay:hover { transform: scale(1.1); }
+        .profile-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--wa-text);
+            margin-top: 4px;
+        }
+        .profile-username {
+            font-size: 14px;
+            color: var(--wa-text-secondary);
+        }
+        .profile-handle {
+            font-size: 13px;
+            color: var(--wa-green-dark);
+            font-weight: 500;
+        }
+        .profile-online-badge {
+            background: var(--wa-green);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: var(--wa-radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .avatar-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .avatar-action-btn {
+            padding: 8px 16px;
+            border-radius: var(--wa-radius-full);
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+        .avatar-action-btn:hover { background: var(--wa-active); }
+        .avatar-action-btn.danger {
+            background: rgba(229, 57, 53, 0.1);
+            color: #E53935;
+        }
+        .avatar-action-btn.danger:hover {
+            background: #E53935;
+            color: white;
+        }
+
+        .section {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .section:last-child { border-bottom: none; }
+        .section-title {
+            padding: 14px 20px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--wa-green-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .setting-item:hover { background: var(--wa-hover); }
+        .setting-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: var(--wa-hover);
+            flex-shrink: 0;
+            color: var(--wa-text-secondary);
+        }
+        .setting-info { flex: 1; min-width: 0; }
+        .setting-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--wa-text);
+        }
+        .setting-value {
+            font-size: 13px;
+            color: var(--wa-text-secondary);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .setting-arrow {
+            color: var(--wa-text-muted);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .setting-toggle {
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--wa-border);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .setting-toggle.on { background: var(--wa-green); }
+        .setting-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .setting-toggle.on::after { transform: translateX(20px); }
+
+        .danger-item { color: #E53935; }
+        .danger-item .setting-label { color: #E53935; }
+        .danger-item .setting-icon { color: #E53935; }
+
+        .chat-user-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .chat-user-item:hover { background: var(--wa-hover); }
+        .chat-user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--wa-green-dark);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+        }
+        .chat-user-info { flex: 1; min-width: 0; }
+        .chat-user-name { font-size: 15px; font-weight: 500; color: var(--wa-text); }
+        .chat-user-status { font-size: 12.5px; color: var(--wa-text-secondary); margin-top: 2px; }
+        .chat-user-badge {
+            font-size: 11px;
+            background: var(--wa-green-dark);
+            color: white;
+            padding: 2px 8px;
+            border-radius: var(--wa-radius-full);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .chat-user-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .chat-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .chat-action-btn:hover { background: var(--wa-hover); }
+        .chat-action-btn.danger { color: #E53935; }
+        .chat-action-btn.danger:hover { background: rgba(229, 57, 53, 0.1); }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: var(--wa-panel);
+            border-radius: var(--wa-radius-lg);
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--wa-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--wa-text);
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { background: var(--wa-hover); }
+        .modal-body { padding: 20px; }
+        .modal-body label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--wa-text-secondary);
+            margin-bottom: 6px;
+            margin-top: 12px;
+        }
+        .modal-body input[type="text"],
+        .modal-body input[type="email"],
+        .modal-body input[type="tel"],
+        .modal-body input[type="password"],
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--wa-border);
+            border-radius: var(--wa-radius-sm);
+            background: var(--wa-bg);
+            color: var(--wa-text);
+            font-size: 14px;
+            font-family: var(--wa-font);
+            outline: none;
+        }
+        .modal-body input:focus, .modal-body textarea:focus {
+            border-color: var(--wa-green-dark);
+        }
+        .modal-body textarea { resize: vertical; min-height: 70px; }
+        .modal-footer {
+            padding: 12px 20px 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--wa-radius-sm);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
+        }
+        .btn-primary { background: var(--wa-green-dark); color: white; }
+        .btn-primary:hover { background: var(--wa-green-darker); }
+        .btn-secondary { background: var(--wa-hover); color: var(--wa-text); }
+        .btn-secondary:hover { background: var(--wa-active); }
+
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--wa-text);
+            color: var(--wa-panel);
+            padding: 10px 20px;
+            border-radius: var(--wa-radius-sm);
+            font-size: 13.5px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: var(--wa-shadow-lg);
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 768px) {
+            .page-container { max-width: 100%; }
+            .profile-avatar-wrapper { width: 110px; height: 110px; }
+            .profile-avatar-large { width: 110px; height: 110px; font-size: 40px; }
+            .setting-icon { width: 36px; height: 36px; font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <a href="/" class="back-btn" title="Back"><i class="fas fa-arrow-left"></i></a>
+            <div class="page-title">Settings</div>
+        </div>
+
+        <div class="profile-header">
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="profileAvatar">
+                    {{ current_user.username|first|upper }}
+                </div>
+                <div class="avatar-overlay" id="uploadAvatarBtn" title="Change photo">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+            </div>
+            <div class="profile-name" id="displayName">{{ current_user.username }}</div>
+            <div class="profile-username">@{{ current_user.username }}</div>
+            {% if profile.handle %}
+            <div class="profile-handle" id="displayHandle">#{{ profile.handle }}</div>
+            {% else %}
+            <div class="profile-handle" id="displayHandle" style="color:var(--wa-text-muted);">No handle set</div>
+            {% endif %}
+            <div class="profile-online-badge">Online</div>
+
+            <div class="avatar-actions">
+                <button class="avatar-action-btn" id="uploadPhotoBtn">
+                    <i class="fas fa-camera"></i> Upload Photo
+                </button>
+                <button class="avatar-action-btn danger" id="deletePhotoBtn">
+                    <i class="fas fa-trash"></i> Delete Photo
+                </button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Account</div>
+            <div class="setting-item" onclick="openEditModal('name')">
+                <div class="setting-icon"><i class="fas fa-user"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Name</div>
+                    <div class="setting-value" id="valName">{{ current_user.username }}</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item" onclick="openEditModal('handle')">
+                <div class="setting-icon"><i class="fas fa-at"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Handle</div>
+                    <div class="setting-value" id="valHandle">{{ profile.handle|default:"Not set" }}</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item" onclick="openEditModal('email')">
+                <div class="setting-icon"><i class="fas fa-envelope"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Email</div>
+                    <div class="setting-value" id="valEmail">{{ current_user.email|default:"Not set" }}</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item" onclick="openEditModal('phone')">
+                <div class="setting-icon"><i class="fas fa-phone"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Phone</div>
+                    <div class="setting-value" id="valPhone">{{ profile.phone|default:"Not set" }}</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item" onclick="openEditModal('bio')">
+                <div class="setting-icon"><i class="fas fa-info-circle"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">About</div>
+                    <div class="setting-value" id="valBio">{{ profile.bio|default:"Hey there! I am using ChatFlow." }}</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Security</div>
+            <div class="setting-item" onclick="openModal('passwordModal')">
+                <div class="setting-icon"><i class="fas fa-lock"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Change Password</div>
+                    <div class="setting-value">Update your password</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item" onclick="showToast('Coming soon')">
+                <div class="setting-icon"><i class="fas fa-key"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Two-Factor Authentication</div>
+                    <div class="setting-value">Add extra security layer</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Privacy</div>
+            <div class="setting-item">
+                <div class="setting-icon"><i class="fas fa-check-double"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Read Receipts</div>
+                    <div class="setting-value">Show when you read messages</div>
+                </div>
+                <div class="setting-toggle on" onclick="toggleSwitch(this)"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Notifications</div>
+            <div class="setting-item">
+                <div class="setting-icon"><i class="fas fa-bell"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Message Notifications</div>
+                    <div class="setting-value">Get notified for new messages</div>
+                </div>
+                <div class="setting-toggle on" onclick="toggleSwitch(this)"></div>
+            </div>
+            <div class="setting-item">
+                <div class="setting-icon"><i class="fas fa-volume-up"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Sound</div>
+                    <div class="setting-value">Play sound for notifications</div>
+                </div>
+                <div class="setting-toggle on" onclick="toggleSwitch(this)"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Chat</div>
+            <div class="setting-item" id="themeSetting">
+                <div class="setting-icon"><i class="fas fa-moon"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Dark Mode</div>
+                    <div class="setting-value">Switch between light and dark</div>
+                </div>
+                <div class="setting-toggle" onclick="toggleTheme(this)"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Chat Management</div>
+            {% for cu in chat_users %}
+            <div class="chat-user-item" data-user-id="{{ cu.id }}" data-username="{{ cu.username }}">
+                <div class="chat-user-avatar" {% if cu.avatar_url %}style="background-image:url('{{ cu.avatar_url }}');"{% endif %}>
+                    {% if not cu.avatar_url %}{{ cu.username|first|upper }}{% endif %}
+                </div>
+                <div class="chat-user-info">
+                    <div class="chat-user-name">{{ cu.username }}</div>
+                    <div class="chat-user-status">
+                        {% if cu.disappearing_seconds > 0 %}
+                            ⏱️ Disappearing: {{ cu.disappearing_seconds }}s
+                        {% else %}
+                            No disappearing messages
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="chat-user-actions">
+                    <button class="chat-action-btn" title="Disappearing messages" onclick="openDisappearingFor({{ cu.id }})">
+                        <i class="fas fa-clock"></i>
+                    </button>
+                    <button class="chat-action-btn danger" title="Clear chat" onclick="clearChatFor({{ cu.id }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div style="padding: 20px; text-align: center; color: var(--wa-text-muted); font-size: 13px;">
+                No chats yet
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">About</div>
+            <div class="setting-item" onclick="showToast('ChatFlow v1.0.0')">
+                <div class="setting-icon"><i class="fas fa-info"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">App Version</div>
+                    <div class="setting-value">v1.0.0</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title" style="color: #E53935;">Account Actions</div>
+            <a href="/logout/" class="setting-item danger-item" style="text-decoration:none;">
+                <div class="setting-icon"><i class="fas fa-sign-out-alt"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Logout</div>
+                    <div class="setting-value">Sign out of your account</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+            <div class="setting-item danger-item" onclick="showToast('Contact support to delete account')">
+                <div class="setting-icon"><i class="fas fa-user-times"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Delete Account</div>
+                    <div class="setting-value">Permanently delete your account</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div style="padding: 24px 20px; text-align: center; color: var(--wa-text-muted); font-size: 12px;">
+            ChatFlow v1.0.0
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="editModalTitle">Edit</h3>
+                <button class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <label id="editLabel">Value</label>
+                <input type="text" id="editInput">
+                <input type="email" id="editEmailInput" style="display:none;">
+                <input type="tel" id="editPhoneInput" style="display:none;">
+                <textarea id="editBioInput" style="display:none;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Change Password</h3>
+                <button class="modal-close" onclick="closeModal('passwordModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <label>Current Password</label>
+                <input type="password" id="oldPassword" placeholder="Enter current password">
+                <label>New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+                <label>Confirm New Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm new password">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('passwordModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="changePassword()">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Toast</div>
+
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+        const AVATAR_URL = "{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}";
+        const CURRENT_USER_INITIAL = "{{ current_user.username|first|upper }}";
+
+        const savedTheme = localStorage.getItem('chat-theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+            const toggle = document.querySelector('#themeSetting .setting-toggle');
+            if (toggle) toggle.classList.add('on');
+        }
+        function toggleTheme(el) {
+            el.classList.toggle('on');
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('chat-theme', isDark ? 'dark' : 'light');
+            showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled');
+        }
+
+        function toggleSwitch(el) {
+            el.classList.toggle('on');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        let currentEditField = '';
+
+        function openEditModal(field) {
+            currentEditField = field;
+            const title = document.getElementById('editModalTitle');
+            const label = document.getElementById('editLabel');
+            const textInput = document.getElementById('editInput');
+            const emailInput = document.getElementById('editEmailInput');
+            const phoneInput = document.getElementById('editPhoneInput');
+            const bioInput = document.getElementById('editBioInput');
+
+            textInput.style.display = 'none';
+            emailInput.style.display = 'none';
+            phoneInput.style.display = 'none';
+            bioInput.style.display = 'none';
+
+            if (field === 'name') {
+                title.innerText = 'Edit Name';
+                label.innerText = 'Name';
+                textInput.style.display = 'block';
+                textInput.value = document.getElementById('valName').innerText;
+            } else if (field === 'handle') {
+                title.innerText = 'Edit Handle';
+                label.innerText = 'Handle';
+                textInput.style.display = 'block';
+                const v = document.getElementById('valHandle').innerText;
+                textInput.value = v === 'Not set' ? '' : v;
+            } else if (field === 'email') {
+                title.innerText = 'Edit Email';
+                label.innerText = 'Email';
+                emailInput.style.display = 'block';
+                const v = document.getElementById('valEmail').innerText;
+                emailInput.value = v === 'Not set' ? '' : v;
+            } else if (field === 'phone') {
+                title.innerText = 'Edit Phone';
+                label.innerText = 'Phone';
+                phoneInput.style.display = 'block';
+                const v = document.getElementById('valPhone').innerText;
+                phoneInput.value = v === 'Not set' ? '' : v;
+            } else if (field === 'bio') {
+                title.innerText = 'Edit About';
+                label.innerText = 'About';
+                bioInput.style.display = 'block';
+                bioInput.value = document.getElementById('valBio').innerText;
+            }
+            openModal('editModal');
+        }
+
+        async function saveEdit() {
+            let value = '';
+            if (currentEditField === 'name') value = document.getElementById('editInput').value.trim();
+            else if (currentEditField === 'handle') value = document.getElementById('editInput').value.trim();
+            else if (currentEditField === 'email') value = document.getElementById('editEmailInput').value.trim();
+            else if (currentEditField === 'phone') value = document.getElementById('editPhoneInput').value.trim();
+            else if (currentEditField === 'bio') value = document.getElementById('editBioInput').value.trim();
+
+            if (currentEditField === 'handle') {
+                const fd = new FormData();
+                fd.append('handle', value);
+                const res = await fetch('/update-handle/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    document.getElementById('valHandle').innerText = value || 'Not set';
+                    const displayHandle = document.getElementById('displayHandle');
+                    if (displayHandle) {
+                        if (value) {
+                            displayHandle.innerText = '#' + value;
+                            displayHandle.style.color = 'var(--wa-green-dark)';
+                        } else {
+                            displayHandle.innerText = 'No handle set';
+                            displayHandle.style.color = 'var(--wa-text-muted)';
+                        }
+                    }
+                    closeModal('editModal');
+                    showToast('Handle updated');
+                } else {
+                    showToast(data.message || 'Failed');
+                }
+            } else if (currentEditField === 'email') {
+                const res = await fetch('/update-email/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': CSRF_TOKEN,
+                    },
+                    body: 'email=' + encodeURIComponent(value),
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    document.getElementById('valEmail').innerText = value || 'Not set';
+                    closeModal('editModal');
+                    showToast('Email updated');
+                } else {
+                    showToast(data.message || 'Failed');
+                }
+            } else if (currentEditField === 'phone' || currentEditField === 'bio') {
+                const fd = new FormData();
+                fd.append('bio', currentEditField === 'bio' ? value : document.getElementById('valBio').innerText);
+                fd.append('phone', currentEditField === 'phone' ? value : document.getElementById('valPhone').innerText);
+                const res = await fetch('/update-profile/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    if (currentEditField === 'bio') {
+                        document.getElementById('valBio').innerText = value || 'Hey there! I am using ChatFlow.';
+                    } else {
+                        document.getElementById('valPhone').innerText = value || 'Not set';
+                    }
+                    closeModal('editModal');
+                    showToast('Profile updated');
+                } else {
+                    showToast(data.message || 'Failed');
+                }
+            } else {
+                showToast('Name change coming soon');
+                closeModal('editModal');
+            }
+        }
+
+        async function changePassword() {
+            const oldPwd = document.getElementById('oldPassword').value;
+            const newPwd = document.getElementById('newPassword').value;
+            const confirmPwd = document.getElementById('confirmPassword').value;
+
+            if (!oldPwd || !newPwd || !confirmPwd) {
+                showToast('All fields required');
+                return;
+            }
+            if (newPwd !== confirmPwd) {
+                showToast('Passwords do not match');
+                return;
+            }
+            if (newPwd.length < 6) {
+                showToast('Min 6 characters');
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('old_password', oldPwd);
+            fd.append('new_password', newPwd);
+            fd.append('confirm_password', confirmPwd);
+
+            const res = await fetch('/change-password/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+                body: fd,
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                showToast('Password changed');
+                closeModal('passwordModal');
+                document.getElementById('oldPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } else {
+                showToast(data.message || 'Failed');
+            }
+        }
+
+        const uploadAvatarBtn = document.getElementById('uploadAvatarBtn');
+        const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+        const avatarInput = document.getElementById('avatarInput');
+        const profileAvatar = document.getElementById('profileAvatar');
+
+        if (AVATAR_URL) {
+            profileAvatar.style.backgroundImage = 'url("' + AVATAR_URL + '")';
+            profileAvatar.innerText = '';
+        }
+
+        function triggerAvatarUpload() {
+            avatarInput.click();
+        }
+
+        uploadAvatarBtn.addEventListener('click', triggerAvatarUpload);
+        uploadPhotoBtn.addEventListener('click', triggerAvatarUpload);
+
+        avatarInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image too large (max 5MB)');
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('avatar', file);
+            const res = await fetch('/upload-avatar/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+                body: fd,
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                profileAvatar.style.backgroundImage = 'url("' + data.avatar_url + '")';
+                profileAvatar.innerText = '';
+                showToast('Avatar updated');
+            } else {
+                showToast(data.message || 'Failed');
+            }
+        });
+
+        const deletePhotoBtn = document.getElementById('deletePhotoBtn');
+
+        deletePhotoBtn.addEventListener('click', async function() {
+            if (!confirm('Delete your profile photo?\n\nThis cannot be undone.')) return;
+
+            try {
+                const res = await fetch('/delete-avatar/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    profileAvatar.style.backgroundImage = '';
+                    profileAvatar.innerText = CURRENT_USER_INITIAL;
+                    showToast('Profile photo deleted');
+                } else {
+                    showToast(data.message || 'Failed');
+                }
+            } catch (err) {
+                showToast('Network error');
+            }
+        });
+
+        async function clearChatFor(userId) {
+            const item = document.querySelector('.chat-user-item[data-user-id="' + userId + '"]');
+            const username = item ? item.dataset.username : 'this user';
+            if (!confirm('Clear all messages with ' + username + '?\n\nThis will delete the chat for both sides and cannot be undone.')) return;
+            try {
+                const res = await fetch('/clear-chat/' + userId + '/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    showToast('Chat cleared');
+                } else {
+                    showToast(data.message || 'Failed');
+                }
+            } catch (err) {
+                showToast('Network error');
+            }
+        }
+
+        function openDisappearingFor(userId) {
+            fetch('/get-disappearing/' + userId + '/')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    const current = data.seconds || 0;
+                    const options = [
+                        { label: 'Off', value: 0 },
+                        { label: '1 minute', value: 60 },
+                        { label: '5 minutes', value: 300 },
+                        { label: '1 hour', value: 3600 },
+                        { label: '6 hours', value: 21600 },
+                        { label: '12 hours', value: 43200 },
+                        { label: '24 hours', value: 86400 },
+                        { label: '7 days', value: 604800 },
+                        { label: '90 days', value: 7776000 },
+                    ];
+
+                    const modal = document.createElement('div');
+                    modal.className = 'modal show';
+                    modal.id = 'disappearModal';
+                    modal.innerHTML =
+                        '<div class="modal-content">' +
+                            '<div class="modal-header">' +
+                                '<h3><i class="fas fa-clock"></i> Disappearing Messages</h3>' +
+                                '<button class="modal-close" id="closeDisappearBtn"><i class="fas fa-times"></i></button>' +
+                            '</div>' +
+                            '<div class="modal-body" id="disappearOptions"></div>' +
+                        '</div>';
+
+                    document.body.appendChild(modal);
+
+                    const list = document.getElementById('disappearOptions');
+                    options.forEach(function(opt) {
+                        const row = document.createElement('div');
+                        row.style.cursor = 'pointer';
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.style.padding = '12px 8px';
+                        row.style.borderBottom = '1px solid var(--wa-border)';
+                        row.innerHTML =
+                            '<div style="flex:1;font-size:15px;">' + opt.label + '</div>' +
+                            (current === opt.value
+                                ? '<i class="fas fa-check" style="color:#128C7E;"></i>'
+                                : '');
+                        row.onclick = function() {
+                            fetch('/set-disappearing/' + userId + '/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'X-CSRFToken': CSRF_TOKEN,
+                                },
+                                body: 'seconds=' + opt.value,
+                            })
+                            .then(function(r) { return r.json(); })
+                            .then(function(res) {
+                                if (res.status === 'ok') {
+                                    showToast(opt.value === 0
+                                        ? 'Disappearing messages turned off'
+                                        : 'Disappearing messages set to ' + opt.label);
+                                    closeDisappearModal();
+                                    const item = document.querySelector('.chat-user-item[data-user-id="' + userId + '"]');
+                                    if (item) {
+                                        const st = item.querySelector('.chat-user-status');
+                                        if (st) st.innerText = opt.value === 0 ? 'No disappearing messages' : '⏱️ Disappearing: ' + opt.value + 's';
+                                    }
+                                }
+                            });
+                        };
+                        list.appendChild(row);
+                    });
+
+                    document.getElementById('closeDisappearBtn').onclick = closeDisappearModal;
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) closeDisappearModal();
+                    });
+                });
+        }
+
+        function closeDisappearModal() {
+            const m = document.getElementById('disappearModal');
+            if (m) m.remove();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 2500);
+        }
+
+        document.querySelectorAll('.modal').forEach(function(modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) modal.classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>
