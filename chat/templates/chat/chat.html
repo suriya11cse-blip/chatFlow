@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp Clone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body { font-family: Arial; height: 100vh; display: flex; background: #d1d7db; }
+
+        .sidebar {
+            width: 320px; background: #fff; border-right: 1px solid #ddd;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            background: #075e54; color: #fff; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .sidebar-header h3 { font-size: 18px; }
+        .logout-btn {
+            background: #25d366; color: white; border: none; padding: 6px 12px;
+            border-radius: 4px; cursor: pointer; font-size: 12px; text-decoration: none;
+        }
+        .user-list { flex: 1; overflow-y: auto; }
+        .user-item {
+            display: flex; align-items: center; padding: 12px 15px;
+            cursor: pointer; border-bottom: 1px solid #f0f0f0;
+        }
+        .user-item:hover { background: #f5f5f5; }
+        .user-item.active { background: #e0f2f1; }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%; background: #25d366;
+            color: white; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; margin-right: 10px; position: relative;
+        }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; background: #bbb;
+            position: absolute; bottom: 0; right: 0; border: 2px solid #fff;
+        }
+        .status-dot.online { background: #25d366; }
+        .user-info { flex: 1; }
+        .user-info .name { font-weight: bold; font-size: 15px; }
+        .user-info .status { font-size: 12px; color: #777; }
+
+        .main {
+            flex: 1; display: flex; flex-direction: column;
+            background: #ece5dd;
+        }
+        .main-header {
+            background: #075e54; color: #fff; padding: 15px;
+            display: flex; align-items: center;
+        }
+        .main-header .avatar { background:#128c7e; }
+        .chat-area {
+            flex: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .msg {
+            max-width: 65%; padding: 8px 12px; border-radius: 8px;
+            position: relative; word-wrap: break-word; font-size: 14px;
+        }
+        .msg.sent { background: #dcf8c6; align-self: flex-end; }
+        .msg.received { background: #fff; align-self: flex-start; }
+        .msg .time { font-size: 10px; color: #666; display: block; text-align: right; margin-top: 3px; }
+        .msg .deleted { font-style: italic; color: #999; }
+        .msg .menu-btn {
+            cursor: pointer; font-size: 14px; color: #666;
+            float: right; margin-left: 8px; padding: 0 4px;
+        }
+        .msg-menu {
+            position: absolute; background: #fff; border: 1px solid #ccc;
+            border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 100; font-size: 13px;
+        }
+        .msg-menu div { padding: 8px 12px; cursor: pointer; }
+        .msg-menu div:hover { background: #f0f0f0; }
+
+        .input-area {
+            background: #f0f0f0; padding: 10px; display: flex; gap: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .input-area input {
+            flex: 1; padding: 12px; border: none; border-radius: 20px;
+            outline: none; font-size: 14px;
+        }
+        .input-area button {
+            background: #25d366; color: white; border: none; padding: 0 20px;
+            border-radius: 20px; cursor: pointer; font-weight: bold;
+        }
+        .input-area button:hover { background: #1ebe5b; }
+        .input-area button:disabled { background: #bbb; cursor: not-allowed; }
+        .typing {
+            font-size: 12px; color: #075e54; padding: 5px 20px;
+            font-style: italic; height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-config" 
+         data-user-id="{{ current_user.id }}" 
+         data-username="{{ current_user.username }}" 
+         style="display:none;"></div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>👤 {{ current_user.username }}</h3>
+            <a href="/logout/" class="logout-btn">Logout</a>
+        </div>
+        <div class="user-list" id="userList">
+            {% for u in users %}
+            <div class="user-item" data-user-id="{{ u.id }}" data-username="{{ u.username }}">
+                <div class="avatar">
+                    {{ u.username|first|upper }}
+                    <span class="status-dot" id="dot-{{ u.id }}"></span>
+                </div>
+                <div class="user-info">
+                    <div class="name">{{ u.username }}</div>
+                    <div class="status" id="status-{{ u.id }}">offline</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="main-header" id="mainHeader">
+            <div class="avatar" id="headerAvatar">?</div>
+            <div style="margin-left:10px;">
+                <div style="font-weight:bold;" id="headerName">Select a user</div>
+                <div style="font-size:12px;" id="headerStatus"></div>
+            </div>
+        </div>
+        <div class="chat-area" id="chatArea"></div>
+        <div class="typing" id="typing"></div>
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="Type a message..." disabled>
+            <button id="sendBtn" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        const config = document.getElementById('chat-config');
+        const CURRENT_USER_ID = parseInt(config.dataset.userId);
+        const CURRENT_USERNAME = config.dataset.username;
+
+        let socket;
+        let activeUserId = null;
+        let activeUsername = null;
+        const onlineUsers = new Set();
+
+        function connectWS() {
+            const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            socket = new WebSocket(proto + '://' + window.location.host + '/ws/chat/');
+
+            socket.onopen = function() { console.log('WS connected'); };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                handleSocketMessage(data);
+            };
+
+            socket.onclose = function() {
+                console.log('WS disconnected. Reconnecting...');
+                setTimeout(connectWS, 2000);
+            };
+        }
+
+        function handleSocketMessage(data) {
+            if (data.type === 'chat_message') {
+                const m = data.message;
+                if (
+                    (m.sender_id === activeUserId && m.receiver_id === CURRENT_USER_ID) ||
+                    (m.sender_id === CURRENT_USER_ID && m.receiver_id === activeUserId)
+                ) {
+                    appendMessage({
+                        id: m.id,
+                        content: m.content,
+                        timestamp: m.timestamp,
+                        is_mine: m.sender_id === CURRENT_USER_ID,
+                        deleted_for_everyone: false,
+                    });
+                }
+            }
+            else if (data.type === 'message_deleted') {
+                const el = document.querySelector('[data-msg-id="' + data.message_id + '"]');
+                if (el) {
+                    const content = el.querySelector('.content');
+                    if (content) {
+                        content.outerHTML = '<span class="content deleted">🚫 This message was deleted</span>';
+                    }
+                    const menuBtn = el.querySelector('.menu-btn');
+                    if (menuBtn) menuBtn.remove();
+                }
+            }
+            else if (data.type === 'user_status') {
+                if (data.status === 'online') {
+                    onlineUsers.add(data.user_id);
+                    updateStatusUI(data.user_id, true);
+                } else {
+                    onlineUsers.delete(data.user_id);
+                    updateStatusUI(data.user_id, false);
+                }
+            }
+            else if (data.type === 'online_list') {
+                // ✅ NEW: Server-la irundhu current online users list
+                data.user_ids.forEach(function(id) {
+                    if (id !== CURRENT_USER_ID) {
+                        onlineUsers.add(id);
+                        updateStatusUI(id, true);
+                    }
+                });
+            }
+            else if (data.type === 'typing') {
+                if (activeUsername === data.from) {
+                    document.getElementById('typing').innerText = data.from + ' is typing...';
+                    setTimeout(function() { document.getElementById('typing').innerText = ''; }, 2000);
+                }
+            }
+        }
+
+        function updateStatusUI(userId, isOnline) {
+            const dot = document.getElementById('dot-' + userId);
+            const status = document.getElementById('status-' + userId);
+            if (dot) dot.classList.toggle('online', isOnline);
+            if (status) status.innerText = isOnline ? 'online' : 'offline';
+            if (activeUserId === userId) {
+                document.getElementById('headerStatus').innerText = isOnline ? 'online' : 'offline';
+            }
+        }
+
+        document.querySelectorAll('.user-item').forEach(function(el) {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.user-item').forEach(function(x) { x.classList.remove('active'); });
+                el.classList.add('active');
+                activeUserId = parseInt(el.dataset.userId);
+                activeUsername = el.dataset.username;
+
+                document.getElementById('headerName').innerText = activeUsername;
+                document.getElementById('headerAvatar').innerText = activeUsername[0].toUpperCase();
+                document.getElementById('headerStatus').innerText = onlineUsers.has(activeUserId) ? 'online' : 'offline';
+
+                document.getElementById('msgInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('msgInput').focus();
+
+                loadMessages(activeUserId);
+            });
+        });
+
+        async function loadMessages(userId) {
+            const res = await fetch('/messages/' + userId + '/');
+            const data = await res.json();
+            const area = document.getElementById('chatArea');
+            area.innerHTML = '';
+            data.messages.forEach(function(m) { appendMessage(m); });
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function appendMessage(m) {
+            const area = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = 'msg ' + (m.is_mine ? 'sent' : 'received');
+            div.dataset.msgId = m.id;
+
+            let contentHtml;
+            if (m.deleted_for_everyone) {
+                contentHtml = '<span class="content deleted">🚫 This message was deleted</span>';
+            } else {
+                contentHtml = '<span class="content">' + escapeHtml(m.content) + '</span>';
+            }
+
+            let menuHtml = '';
+            if (m.is_mine && !m.deleted_for_everyone) {
+                menuHtml = '<span class="menu-btn">⋮</span>';
+            }
+
+            div.innerHTML = menuHtml + contentHtml + '<span class="time">' + m.timestamp + '</span>';
+
+            const menuBtn = div.querySelector('.menu-btn');
+            if (menuBtn) {
+                menuBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    showMenu(e, m);
+                });
+            }
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function showMenu(e, m) {
+            removeMenu();
+            const menu = document.createElement('div');
+            menu.className = 'msg-menu';
+            menu.style.top = e.pageY + 'px';
+            menu.style.left = e.pageX + 'px';
+
+            const delMe = document.createElement('div');
+            delMe.innerText = '🗑️ Delete for me';
+            delMe.onclick = async function() {
+                await fetch('/delete-for-me/' + m.id + '/', { method: 'POST' });
+                const el = document.querySelector('[data-msg-id="' + m.id + '"]');
+                if (el) el.remove();
+                removeMenu();
+            };
+
+            const delAll = document.createElement('div');
+            delAll.innerText = '🚫 Delete for everyone';
+            delAll.onclick = function() {
+                socket.send(JSON.stringify({
+                    action: 'delete_for_everyone',
+                    message_id: m.id,
+                    receiver_id: activeUserId,
+                }));
+                removeMenu();
+            };
+
+            menu.appendChild(delMe);
+            menu.appendChild(delAll);
+            document.body.appendChild(menu);
+            setTimeout(function() {
+                document.addEventListener('click', removeMenu, { once: true });
+            }, 100);
+        }
+
+        function removeMenu() {
+            document.querySelectorAll('.msg-menu').forEach(function(m) { m.remove(); });
+        }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.innerText = t;
+            return d.innerHTML;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const content = input.value.trim();
+            if (!content || !activeUserId) return;
+            socket.send(JSON.stringify({
+                action: 'send_message',
+                receiver_id: activeUserId,
+                content: content,
+            }));
+            input.value = '';
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('msgInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            } else if (activeUserId) {
+                socket.send(JSON.stringify({
+                    action: 'typing',
+                    receiver_id: activeUserId,
+                }));
+            }
+        });
+
+        connectWS();
+    </script>
+</body>
+</html>

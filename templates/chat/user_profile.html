@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ profile_user.username }} - ChatFlow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --wa-green: #25D366;
+            --wa-green-dark: #128C7E;
+            --wa-green-darker: #075E54;
+            --wa-bg: #ECE5DD;
+            --wa-bg-dark: #0B141A;
+            --wa-panel: #FFFFFF;
+            --wa-panel-dark: #111B21;
+            --wa-header: #F0F2F5;
+            --wa-header-dark: #202C33;
+            --wa-hover: #F5F6F6;
+            --wa-hover-dark: #202C33;
+            --wa-active: #F0F2F5;
+            --wa-active-dark: #2A3942;
+            --wa-border: #E9EDEF;
+            --wa-border-dark: #2A3942;
+            --wa-text: #111B21;
+            --wa-text-dark: #E9EDEF;
+            --wa-text-secondary: #667781;
+            --wa-text-secondary-dark: #8696A0;
+            --wa-text-muted: #8696A0;
+            --wa-text-muted-dark: #667781;
+            --wa-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+            --wa-shadow-lg: 0 2px 5px rgba(11, 20, 26, 0.26);
+            --wa-radius-sm: 7.5px;
+            --wa-radius-md: 10px;
+            --wa-radius-lg: 14px;
+            --wa-radius-full: 999px;
+            --wa-font: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --wa-transition: cubic-bezier(0.1, 0.82, 0.25, 1);
+        }
+        body.dark {
+            --wa-bg: #0B141A;
+            --wa-panel: #111B21;
+            --wa-header: #202C33;
+            --wa-hover: #202C33;
+            --wa-active: #2A3942;
+            --wa-border: #2A3942;
+            --wa-text: #E9EDEF;
+            --wa-text-secondary: #8696A0;
+            --wa-text-muted: #667781;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { font-family: var(--wa-font); background: var(--wa-bg); color: var(--wa-text); min-height: 100vh; font-size: 14.5px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+        body.dark { background: var(--wa-bg-dark); }
+
+        .page-container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: var(--wa-panel);
+            min-height: 100vh;
+            box-shadow: 0 1px 3px rgba(11, 20, 26, 0.13);
+        }
+        body.dark .page-container { background: var(--wa-panel); }
+
+        .page-header {
+            background: var(--wa-header);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--wa-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        body.dark .page-header { background: var(--wa-header); }
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .back-btn:hover { background: var(--wa-hover); }
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--wa-text);
+            flex: 1;
+        }
+
+        .profile-header {
+            padding: 32px 20px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .profile-avatar-wrapper {
+            position: relative;
+            width: 130px;
+            height: 130px;
+        }
+        .profile-avatar-large {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--wa-green-dark), var(--wa-green));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 48px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 4px 12px rgba(11, 20, 26, 0.15);
+        }
+        .profile-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--wa-text);
+            margin-top: 4px;
+        }
+        .profile-username {
+            font-size: 14px;
+            color: var(--wa-text-secondary);
+        }
+        .profile-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: var(--wa-radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        .profile-status-badge.online { background: var(--wa-green); }
+        .profile-status-badge.offline { background: var(--wa-text-muted); }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .action-btn {
+            padding: 10px 24px;
+            border-radius: var(--wa-radius-full);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        .action-btn.primary { background: var(--wa-green-dark); color: white; }
+        .action-btn.primary:hover { background: var(--wa-green-darker); }
+        .action-btn.secondary { background: var(--wa-hover); color: var(--wa-text); }
+        .action-btn.secondary:hover { background: var(--wa-active); }
+
+        .section {
+            padding: 4px 0;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .section:last-child { border-bottom: none; }
+        .section-title {
+            padding: 14px 20px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--wa-green-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+        }
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: var(--wa-hover);
+            flex-shrink: 0;
+            color: var(--wa-text-secondary);
+        }
+        .info-content { flex: 1; min-width: 0; }
+        .info-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--wa-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--wa-text);
+            margin-top: 2px;
+            word-wrap: break-word;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .setting-item:hover { background: var(--wa-hover); }
+        .setting-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: var(--wa-hover);
+            flex-shrink: 0;
+            color: var(--wa-text-secondary);
+        }
+        .setting-info { flex: 1; min-width: 0; }
+        .setting-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--wa-text);
+        }
+        .setting-value {
+            font-size: 13px;
+            color: var(--wa-text-secondary);
+            margin-top: 2px;
+        }
+        .setting-arrow {
+            color: var(--wa-text-muted);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .danger-item { color: #E53935; }
+        .danger-item .setting-label { color: #E53935; }
+        .danger-item .setting-icon { color: #E53935; }
+
+        .media-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--wa-border);
+        }
+        .media-tab {
+            padding: 6px 14px;
+            border-radius: var(--wa-radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--wa-text-secondary);
+            background: transparent;
+            border: none;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
+        }
+        .media-tab.active {
+            background: var(--wa-green-dark);
+            color: white;
+        }
+        .media-tab:hover:not(.active) {
+            background: var(--wa-hover);
+        }
+        .media-empty {
+            padding: 20px;
+            text-align: center;
+            color: var(--wa-text-muted);
+            font-size: 13px;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--wa-text);
+            color: var(--wa-panel);
+            padding: 10px 20px;
+            border-radius: var(--wa-radius-sm);
+            font-size: 13.5px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.2s;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: var(--wa-shadow-lg);
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 768px) {
+            .page-container { max-width: 100%; }
+            .profile-avatar-wrapper { width: 110px; height: 110px; }
+            .profile-avatar-large { width: 110px; height: 110px; font-size: 40px; }
+            .info-icon, .setting-icon { width: 36px; height: 36px; font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <a href="/" class="back-btn" title="Back"><i class="fas fa-arrow-left"></i></a>
+            <div class="page-title">{{ profile_user.username }}'s Profile</div>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar-wrapper">
+                <div class="profile-avatar-large" id="profileAvatar">
+                    {{ profile_user.username|first|upper }}
+                </div>
+            </div>
+            <div class="profile-name">{{ profile_user.username }}</div>
+            <div class="profile-username">@{{ profile_user.username }}</div>
+            {% if is_online %}
+            <div class="profile-status-badge online">Online</div>
+            {% else %}
+            <div class="profile-status-badge offline">Offline</div>
+            {% endif %}
+
+            <div class="action-buttons">
+                <a href="/?user={{ profile_user.id }}" class="action-btn primary">
+                    <i class="fas fa-comment"></i> Message
+                </a>
+            </div>
+        </div>
+
+        <!-- About -->
+        {% if profile and profile.bio or profile.phone %}
+        <div class="section">
+            <div class="section-title">About</div>
+            {% if profile.bio %}
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-info-circle"></i></div>
+                <div class="info-content">
+                    <div class="info-label">Bio</div>
+                    <div class="info-value">{{ profile.bio }}</div>
+                </div>
+            </div>
+            {% endif %}
+            {% if profile.phone %}
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-phone"></i></div>
+                <div class="info-content">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">{{ profile.phone }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Media, Links, Docs -->
+        <div class="section">
+            <div class="section-title">Media, Links, Docs</div>
+            <div class="media-tabs">
+                <button class="media-tab active" onclick="switchMediaTab(this, 'media')">Media</button>
+                <button class="media-tab" onclick="switchMediaTab(this, 'links')">Links</button>
+                <button class="media-tab" onclick="switchMediaTab(this, 'docs')">Docs</button>
+            </div>
+            <div id="mediaContent">
+                <div class="media-empty">No media shared yet</div>
+            </div>
+        </div>
+
+        <!-- Starred Messages -->
+        <div class="section">
+            <div class="section-title">Starred Messages</div>
+            <div class="setting-item" onclick="showToast('Starred messages coming soon')">
+                <div class="setting-icon"><i class="fas fa-star"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">View Starred</div>
+                    <div class="setting-value">See messages you both starred</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+            <div class="section-title">Actions</div>
+            <div class="setting-item" onclick="toggleMute(this)">
+                <div class="setting-icon"><i class="fas fa-bell-slash"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Mute Notifications</div>
+                    <div class="setting-value" id="muteStatus">Off</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item danger-item" onclick="confirmBlock()">
+                <div class="setting-icon"><i class="fas fa-ban"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Block {{ profile_user.username }}</div>
+                    <div class="setting-value">Block this contact</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div class="setting-item danger-item" onclick="confirmReport()">
+                <div class="setting-icon"><i class="fas fa-flag"></i></div>
+                <div class="setting-info">
+                    <div class="setting-label">Report {{ profile_user.username }}</div>
+                    <div class="setting-value">Report to ChatFlow</div>
+                </div>
+                <div class="setting-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        </div>
+
+        <div style="padding: 24px 20px; text-align: center; color: var(--wa-text-muted); font-size: 12px;">
+            ChatFlow v1.0.0
+        </div>
+    </div>
+
+    <div id="toast">Toast</div>
+
+    <script>
+                const PROFILE_USERNAME = "{{ profile_user.username }}";
+        const AVATAR_URL = "{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}";
+
+        // Dark mode
+        if (localStorage.getItem('chat-theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
+
+        // Avatar
+        if (AVATAR_URL) {
+            const avatarEl = document.getElementById('profileAvatar');
+            avatarEl.style.backgroundImage = 'url("' + AVATAR_URL + '")';
+            avatarEl.innerText = '';
+        }
+
+        // Media tabs
+        function switchMediaTab(el, tab) {
+            document.querySelectorAll('.media-tab').forEach(function(t) { t.classList.remove('active'); });
+            el.classList.add('active');
+            const content = document.getElementById('mediaContent');
+            if (tab === 'media') content.innerHTML = '<div class="media-empty">No media shared yet</div>';
+            else if (tab === 'links') content.innerHTML = '<div class="media-empty">No links shared yet</div>';
+            else if (tab === 'docs') content.innerHTML = '<div class="media-empty">No documents shared yet</div>';
+        }
+
+        // Mute toggle
+        function toggleMute(el) {
+            const status = document.getElementById('muteStatus');
+            if (status.innerText === 'Off') {
+                status.innerText = 'On';
+                showToast('Notifications muted');
+            } else {
+                status.innerText = 'Off';
+                showToast('Notifications unmuted');
+            }
+        }
+
+        // Block confirm
+        function confirmBlock() {
+            if (confirm('Block ' + PROFILE_USERNAME + '?\n\nYou will not receive messages from them.')) {
+                showToast(PROFILE_USERNAME + ' blocked');
+            }
+        }
+
+        // Report confirm
+        function confirmReport() {
+            if (confirm('Report ' + PROFILE_USERNAME + ' to ChatFlow?\n\nThey will not be notified.')) {
+                showToast('Reported to ChatFlow');
+            }
+        }
+
+        // Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 2500);
+        }// PART 2 paste panna place
+    </script>
+</body>
+</html>

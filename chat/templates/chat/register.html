@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <style>
+        body { font-family: Arial; background:#075e54; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+        .box { background:#fff; padding:30px; border-radius:10px; width:320px; }
+        h2 { text-align:center; color:#075e54; }
+        input { width:100%; padding:10px; margin:8px 0; box-sizing:border-box; border:1px solid #ccc; border-radius:5px; }
+        button { width:100%; padding:10px; background:#25d366; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:16px; }
+        button:hover { background:#1ebe5b; }
+        .err { color:red; text-align:center; font-size:14px; }
+        .link { text-align:center; margin-top:10px; }
+        a { color:#075e54; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>📝 Register</h2>
+        {% if error %}<p class="err">{{ error }}</p>{% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+        <div class="link">Have account? <a href="/login/">Login</a></div>
+    </div>
+</body>
+</html>
