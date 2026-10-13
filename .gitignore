@@ -57,3 +57,6 @@ celerybeat.pid
 # ============================================================
 .DS_Store
 Thumbs.db
+.env
+*.env
+db_backup*.sqlite3
