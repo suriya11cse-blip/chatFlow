@@ -126,6 +126,9 @@ class UserProfile(models.Model):
     is_ai_bot = models.BooleanField(default=False)
     last_seen = models.DateTimeField(null=True, blank=True)
 
+    handle_changed_at = models.DateTimeField(null=True, blank=True)
+    two_factor_enabled = models.BooleanField(default=False)
+
     show_read_receipts = models.BooleanField(default=True)
     font_size = models.CharField(
         max_length=10, choices=FONT_SIZES, default='medium'

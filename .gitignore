@@ -60,3 +60,9 @@ Thumbs.db
 .env
 *.env
 db_backup*.sqlite3
+*.bak_*
+*.backup
+*_backup*
+models_backup.py
+update_chat.py
+verify.ps1

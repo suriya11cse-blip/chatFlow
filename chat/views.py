@@ -1,9 +1,15 @@
-# chat/views.py
+﻿# chat/views.py
+"""
+ChatFlow — Main Views
+App: chat
+"""
 import os
 import uuid
 import random
 import re
 import requests
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -15,7 +21,6 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from datetime import timedelta
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
@@ -29,7 +34,8 @@ from .consumers import ONLINE_USERS
 # ============================================================
 # CONSTANTS
 # ============================================================
-AI_USERNAME = 'ChatFlow AI'          # Change to 'Meta AI' if you want
+AI_USERNAME = 'ChatFlow AI'
+
 IMAGE_MAX_BYTES = 100 * 1024 * 1024
 VIDEO_MAX_BYTES = 100 * 1024 * 1024
 AUDIO_MAX_BYTES = 16 * 1024 * 1024
@@ -41,7 +47,6 @@ DOCUMENT_MAX_BYTES = 100 * 1024 * 1024
 # ============================================================
 
 def _format_wa_time(dt):
-    """WhatsApp-style time: '10:45 pm'."""
     if not dt:
         return ''
     h = dt.hour
@@ -74,7 +79,6 @@ def _generate_chatflow_id():
 
 
 def _ask_ai(user_message, history=None):
-    """Call Groq API and return response text."""
     api_key = getattr(settings, 'GROQ_API_KEY', '')
     model = getattr(settings, 'GROQ_MODEL', 'openai/gpt-oss-20b')
 
@@ -117,16 +121,11 @@ def _ask_ai(user_message, history=None):
 
 
 def _ensure_ai_friend(user):
-    """
-    Ensure ChatFlow AI is auto-added as friend (Meta AI style).
-    Called on every login/home.
-    """
     try:
         ai_user = User.objects.get(username=AI_USERNAME)
     except User.DoesNotExist:
         return None
 
-    # Add AI as friend (both directions)
     FriendRequest.objects.get_or_create(
         sender=user, receiver=ai_user,
         defaults={'status': 'accepted'}
@@ -138,7 +137,6 @@ def _ensure_ai_friend(user):
     ChatContact.objects.get_or_create(user=user, contact=ai_user)
     ChatContact.objects.get_or_create(user=ai_user, contact=user)
 
-    # Welcome message (only first time)
     already = Message.objects.filter(
         sender=ai_user, receiver=user, message_type='text'
     ).exists()
@@ -154,8 +152,6 @@ def _ensure_ai_friend(user):
             message_type='text',
         )
     return ai_user
-
-
 # ============================================================
 # AUTH
 # ============================================================
@@ -163,16 +159,94 @@ def _ensure_ai_friend(user):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
+
     if request.method == 'POST':
-        u = request.POST.get('username')
-        p = request.POST.get('password')
-        user = authenticate(request, username=u, password=p)
-        if user:
-            login(request, user)
-            _ensure_ai_friend(user)
-            return redirect('home')
-        return render(request, 'chat/login.html', {'error': 'Invalid credentials'})
+        identifier = (request.POST.get('identifier') or '').strip()
+        password = request.POST.get('password') or ''
+
+        if not identifier or not password:
+            return render(request, 'chat/login.html', {
+                'error': 'Please enter your credentials',
+            })
+
+        user = _find_user_by_identifier(identifier)
+
+        if user is None:
+            return render(request, 'chat/login.html', {
+                'error': 'No account found with that username, email, phone, or handle',
+            })
+
+        user = authenticate(request, username=user.username, password=password)
+
+        if user is None:
+            return render(request, 'chat/login.html', {
+                'error': 'Incorrect password. Please try again.',
+            })
+
+        if not user.is_active:
+            return render(request, 'chat/login.html', {
+                'error': 'This account has been disabled.',
+            })
+
+        login(request, user)
+        _ensure_ai_friend(user)
+        return redirect('home')
+
     return render(request, 'chat/login.html')
+
+
+def _find_user_by_identifier(identifier):
+    """
+    Find a user by username, email, phone (10 digits), or @handle.
+    Returns User or None.
+    """
+    if not identifier:
+        return None
+
+    ident = identifier.strip()
+    ident_lower = ident.lower()
+
+    # 1) Username (exact, case-insensitive)
+    user = User.objects.filter(username__iexact=ident).first()
+    if user:
+        return user
+
+    # 2) Email (exact, case-insensitive)
+    user = User.objects.filter(email__iexact=ident).first()
+    if user:
+        return user
+
+    # 3) @handle — strip leading @ if any
+    handle = ident_lower.lstrip('@')
+    if handle:
+        try:
+            profile = UserProfile.objects.filter(handle__iexact=handle).first()
+            if profile:
+                return profile.user
+        except Exception:
+            pass
+
+    # 4) Phone — 10 digits
+    digits = ident.replace(' ', '').replace('-', '').replace('+', '')
+    if digits.isdigit() and len(digits) == 10:
+        try:
+            profile = UserProfile.objects.filter(phone=digits).first()
+            if profile:
+                return profile.user
+        except Exception:
+            pass
+
+    # 5) Phone — last 10 digits (with +91 prefix)
+    if digits.isdigit() and len(digits) > 10:
+        last10 = digits[-10:]
+        try:
+            profile = UserProfile.objects.filter(phone=last10).first()
+            if profile:
+                return profile.user
+        except Exception:
+            pass
+
+    return None
 
 
 def register_view(request):
@@ -181,29 +255,106 @@ def register_view(request):
 
     if request.method == 'POST':
         u = (request.POST.get('username') or '').strip()
-        p = request.POST.get('password') or ''
+        phone = (request.POST.get('phone') or '').strip()
+        email = (request.POST.get('email') or '').strip()
         handle = (request.POST.get('handle') or '').strip().lower()
+        p = request.POST.get('password') or ''
+        cp = request.POST.get('confirm_password') or ''
 
-        if not u or not p or not handle:
-            return render(request, 'chat/register.html', {'error': 'All fields are required'})
+        errors = []
 
-        if User.objects.filter(username=u).exists():
-            return render(request, 'chat/register.html', {'error': 'Username already exists'})
+        # ---- Username: 5-15 chars, letters/numbers/underscore only ----
+        if not u:
+            errors.append('Username is required')
+        elif len(u) < 5:
+            errors.append('Username must be at least 5 characters (you entered ' + str(len(u)) + ')')
+        elif len(u) > 15:
+            errors.append('Username must be at most 15 characters (you entered ' + str(len(u)) + ')')
+        elif not re.match(r'^[a-zA-Z0-9_]+$', u):
+            errors.append('Username: only letters, numbers, and underscores allowed')
 
-        if UserProfile.objects.filter(handle=handle).exists():
-            return render(request, 'chat/register.html', {'error': f'Handle @{handle} is already taken'})
+        # ---- Phone: exactly 10 digits ----
+        if not phone:
+            errors.append('Phone number is required')
+        elif not phone.isdigit() or len(phone) != 10:
+            errors.append('Phone must be exactly 10 digits')
 
-        user = User.objects.create_user(username=u, password=p)
+        # ---- Email: valid format ----
+        if not email:
+            errors.append('Email is required')
+        elif not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            errors.append('Please enter a valid email address')
 
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        profile.handle = handle
-        if not profile.chatflow_id:
-            profile.chatflow_id = _generate_chatflow_id()
-        profile.save(update_fields=['handle', 'chatflow_id'])
+        # ---- Handle: 3-30 chars, a-z 0-9 _ ----
+        if not handle:
+            errors.append('Handle is required')
+        elif not (3 <= len(handle) <= 30):
+            errors.append('Handle must be 3-30 characters')
+        elif not all(c.islower() or c.isdigit() or c == '_' for c in handle):
+            errors.append('Handle: only a-z, 0-9, _ allowed')
 
-        _ensure_ai_friend(user)
+        # ---- Password: min 6 chars ----
+        if not p:
+            errors.append('Password is required')
+        elif len(p) < 6:
+            errors.append('Password must be at least 6 characters')
+        elif p.isdigit():
+            errors.append('Password cannot be entirely numeric')
 
-        return redirect('login')
+        # ---- Confirm password ----
+        if p != cp:
+            errors.append('Passwords do not match')
+
+        # ---- Uniqueness ----
+        if u and User.objects.filter(username__iexact=u).exists():
+            errors.append('Username already exists')
+        if email and User.objects.filter(email__iexact=email).exists():
+            errors.append('Email already registered')
+        if handle and UserProfile.objects.filter(handle=handle).exists():
+            errors.append('Handle @' + handle + ' is already taken')
+        if phone and UserProfile.objects.filter(phone=phone).exists():
+            errors.append('Phone number already registered')
+
+        if errors:
+            return render(request, 'chat/register.html', {
+                'error': ' • '.join(errors),
+                'username': u,
+                'phone': phone,
+                'email': email,
+                'handle': handle,
+            })
+
+        # ---- Create user + profile ----
+        try:
+            user = User.objects.create_user(
+                username=u,
+                password=p,
+                email=email,
+            )
+
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.handle = handle
+            profile.phone = phone
+            if not profile.chatflow_id:
+                profile.chatflow_id = _generate_chatflow_id()
+            profile.save(update_fields=['handle', 'phone', 'chatflow_id'])
+
+            _ensure_ai_friend(user)
+            return redirect('login')
+
+        except Exception as e:
+            # Roll back partial user if profile save failed
+            try:
+                User.objects.filter(username__iexact=u).delete()
+            except Exception:
+                pass
+            return render(request, 'chat/register.html', {
+                'error': 'Registration failed: ' + str(e)[:100],
+                'username': u,
+                'phone': phone,
+                'email': email,
+                'handle': handle,
+            })
 
     return render(request, 'chat/register.html')
 
@@ -211,8 +362,6 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
-
-
 # ============================================================
 # SIDEBAR / HOME
 # ============================================================
@@ -278,7 +427,9 @@ def _get_sidebar_users(user):
 
         unread = Message.objects.filter(
             sender=u, receiver=user, is_read=False
-        ).exclude(deleted_for_everyone=True).exclude(deleted_for=user).exclude(
+        ).exclude(deleted_for_everyone=True).exclude(
+            deleted_for=user
+        ).exclude(
             expires_at__isnull=False, expires_at__lte=now
         ).count()
 
@@ -288,7 +439,6 @@ def _get_sidebar_users(user):
         except UserProfile.DoesNotExist:
             pass
 
-        # Also treat AI_USERNAME as AI
         if u.username == AI_USERNAME:
             is_ai = True
 
@@ -315,18 +465,14 @@ def _get_sidebar_users(user):
             'sound_enabled': sound_enabled,
         })
 
-        # ⭐ WhatsApp-style: pinned first, then by latest message time
-    # AI also follows normal sorting (no special priority)
     with_msg = [r for r in results if r['last_ts'] is not None]
     without_msg = [r for r in results if r['last_ts'] is None]
-    
-    # Sort with_msg: pinned first, then by timestamp (newest first)
+
     with_msg.sort(key=lambda x: (not x['is_pinned'], -x['last_ts'].timestamp()))
-    
-    # Sort without_msg: pinned first, then alphabetical (AI still in list)
     without_msg.sort(key=lambda x: (not x['is_pinned'], x['username'].lower()))
 
     return with_msg + without_msg
+
 
 @login_required
 def home(request):
@@ -338,7 +484,6 @@ def home(request):
     profile.last_seen = timezone.now()
     profile.save(update_fields=['last_seen'])
 
-    # ⭐ Auto-add AI on every home load
     _ensure_ai_friend(request.user)
 
     sidebar = _get_sidebar_users(request.user)
@@ -366,8 +511,6 @@ def home(request):
         'my_avatar_url': my_avatar_url,
         'online_user_ids': online_user_ids,
     })
-
-
 # ============================================================
 # MESSAGES
 # ============================================================
@@ -718,8 +861,6 @@ def get_disappearing(request, user_id):
         seconds = 0
 
     return JsonResponse({'status': 'ok', 'seconds': seconds})
-
-
 # ============================================================
 # FRIEND REQUESTS
 # ============================================================
@@ -785,8 +926,14 @@ def accept_friend_request(request, request_id):
     fr.status = 'accepted'
     fr.save()
 
-    ChatContact.objects.get_or_create(user=request.user, contact=fr.sender)
-    ChatContact.objects.get_or_create(user=fr.sender, contact=request.user)
+    ChatContact.objects.get_or_create(
+        user=request.user, contact=fr.sender,
+        defaults={'is_friend': True}
+    )
+    ChatContact.objects.get_or_create(
+        user=fr.sender, contact=request.user,
+        defaults={'is_friend': True}
+    )
 
     try:
         channel_layer = get_channel_layer()
@@ -975,8 +1122,14 @@ def contact_user(request):
     if reverse:
         reverse.status = 'accepted'
         reverse.save()
-        ChatContact.objects.get_or_create(user=request.user, contact=other)
-        ChatContact.objects.get_or_create(user=other, contact=request.user)
+        ChatContact.objects.get_or_create(
+            user=request.user, contact=other,
+            defaults={'is_friend': True}
+        )
+        ChatContact.objects.get_or_create(
+            user=other, contact=request.user,
+            defaults={'is_friend': True}
+        )
         try:
             channel_layer = get_channel_layer()
             payload = {
@@ -1027,7 +1180,7 @@ def _notify_new_friend_request(from_user, to_user):
 
 
 # ============================================================
-# FILE UPLOADS
+# FILE UPLOADS (broadcast helper)
 # ============================================================
 
 def _broadcast_new_message(m, sender, receiver, caption=''):
@@ -1078,7 +1231,9 @@ def _broadcast_new_message(m, sender, receiver, caption=''):
         async_to_sync(channel_layer.group_send)(f"user_{sender.id}", payload)
     except Exception as e:
         print(f"WS send error: {e}")
-
+        # ============================================================
+# FILE UPLOADS
+# ============================================================
 
 @csrf_exempt
 @login_required
@@ -1377,19 +1532,42 @@ def update_profile(request):
 
 @csrf_exempt
 @login_required
+def update_username(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'fail', 'message': 'POST only'})
+    new_username = request.POST.get('username', '').strip()
+    if not new_username:
+        return JsonResponse({'status': 'fail', 'message': 'Username required'})
+    if len(new_username) < 3:
+        return JsonResponse({'status': 'fail', 'message': 'Min 3 characters'})
+    if User.objects.filter(username__iexact=new_username).exclude(id=request.user.id).exists():
+        return JsonResponse({'status': 'fail', 'message': 'Username already taken'})
+    request.user.username = new_username
+    request.user.save()
+    return JsonResponse({'status': 'ok'})
+
+
+@csrf_exempt
+@login_required
 def update_handle(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'POST only'})
     handle = request.POST.get('handle', '').strip().lower()
     if not handle:
         return JsonResponse({'status': 'fail', 'message': 'Handle required'})
+    if not (3 <= len(handle) <= 30):
+        return JsonResponse({'status': 'fail', 'message': 'Handle must be 3-30 characters'})
+    if not all(c.islower() or c.isdigit() or c == '_' for c in handle):
+        return JsonResponse({'status': 'fail', 'message': 'Only a-z, 0-9, _ allowed'})
     if UserProfile.objects.filter(handle=handle).exclude(user=request.user).exists():
         return JsonResponse({'status': 'fail', 'message': 'Handle already taken'})
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
     profile.handle = handle
-    profile.save()
-    return JsonResponse({'status': 'ok'})
+    profile.handle_changed_at = timezone.now()
+    profile.save(update_fields=['handle', 'handle_changed_at'])
+    return JsonResponse({'status': 'ok', 'handle': handle})
 
 
 @csrf_exempt
@@ -1456,7 +1634,6 @@ def change_password(request):
 
     request.user.set_password(new_password)
     request.user.save()
-    login(request, request.user)
     return JsonResponse({'status': 'ok'})
 
 
@@ -1469,6 +1646,39 @@ def update_email(request):
         request.user.save()
         return JsonResponse({'status': 'ok'})
     return JsonResponse({'status': 'fail'})
+
+
+@csrf_exempt
+@login_required
+def toggle_2fa(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'fail', 'message': 'POST only'})
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    enabled = request.POST.get('enabled', '1') in ('1', 'true', 'True', 'yes')
+    profile.two_factor_enabled = enabled
+    profile.save(update_fields=['two_factor_enabled'])
+    return JsonResponse({'status': 'ok', 'two_factor_enabled': enabled})
+
+
+@login_required
+def get_2fa(request):
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+        enabled = profile.two_factor_enabled
+    except UserProfile.DoesNotExist:
+        enabled = False
+    return JsonResponse({'status': 'ok', 'two_factor_enabled': enabled})
+
+
+@csrf_exempt
+@login_required
+def delete_account(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'fail', 'message': 'POST only'})
+    user = request.user
+    logout(request)
+    user.delete()
+    return JsonResponse({'status': 'ok', 'message': 'Account deleted'})
 
 
 # ============================================================
@@ -1625,16 +1835,13 @@ def get_wallpaper(request, user_id):
         wallpaper = ''
 
     return JsonResponse({'status': 'ok', 'wallpaper': wallpaper})
-
-
 # ============================================================
-# ⭐ AI VOICE ENDPOINTS (Sarvam)
+# AI — VOICE (Sarvam) + CHAT (Groq)
 # ============================================================
 
 @csrf_exempt
 @login_required
 def ai_speech_to_text(request):
-    """Sarvam Speech-to-Text: audio → text."""
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'POST only'})
 
@@ -1677,7 +1884,6 @@ def ai_speech_to_text(request):
 @csrf_exempt
 @login_required
 def ai_text_to_speech(request):
-    """Sarvam Text-to-Speech: text → audio (base64)."""
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'POST only'})
 
@@ -1730,7 +1936,6 @@ def ai_text_to_speech(request):
 @csrf_exempt
 @login_required
 def ai_chat(request):
-    """AI chat fallback (non-WebSocket)."""
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'POST only'})
 
@@ -1743,10 +1948,10 @@ def ai_chat(request):
     except User.DoesNotExist:
         return JsonResponse({'status': 'fail', 'message': 'AI not found'})
 
-    # Get history
     history = []
     msgs = Message.objects.filter(
-        Q(sender=request.user, receiver=ai_user) | Q(sender=ai_user, receiver=request.user)
+        Q(sender=request.user, receiver=ai_user) |
+        Q(sender=ai_user, receiver=request.user)
     ).order_by('-timestamp')[:6]
     for m in reversed(list(msgs)):
         history.append({
@@ -1754,22 +1959,18 @@ def ai_chat(request):
             'content': m.content or '',
         })
 
-    # Save user message
     user_msg = Message.objects.create(
         sender=request.user, receiver=ai_user,
         content=message, message_type='text',
     )
 
-    # Get AI reply
     ai_text = _ask_ai(message, history)
 
-    # Save AI message
     ai_msg = Message.objects.create(
         sender=ai_user, receiver=request.user,
         content=ai_text, message_type='text',
     )
 
-    # Broadcast via WebSocket
     try:
         channel_layer = get_channel_layer()
         now = timezone.localtime(ai_msg.timestamp)
@@ -1811,7 +2012,7 @@ def ai_chat(request):
 
 
 # ============================================================
-# STATUS (delegated)
+# STATUS (delegated to status_views)
 # ============================================================
 
 @login_required
@@ -1858,181 +2059,113 @@ def status_reply_view(request, status_id):
 def status_info_view(request, status_id):
     from . import status_views
     return status_views.get_status_info(request, status_id)
+
+
 # ============================================================
-# ⭐ AI VOICE ENDPOINTS (Sarvam)
+# FORGOT / RESET PASSWORD (UI code — no email/SMS)
 # ============================================================
 
-@csrf_exempt
-@login_required
-def ai_speech_to_text(request):
-    """Sarvam Speech-to-Text: audio → text."""
+def _generate_reset_code():
+    """6-digit code"""
+    return str(random.randint(100000, 999999))
+
+
+def forgot_password_view(request):
+    """
+    Generate a 6-digit reset code and return it in JSON.
+    In a real app, this code would be emailed / SMS'd.
+    For this demo, we return it directly in the response so the UI can show it.
+    """
     if request.method != 'POST':
         return JsonResponse({'status': 'fail', 'message': 'POST only'})
 
-    audio_file = request.FILES.get('audio')
-    if not audio_file:
-        return JsonResponse({'status': 'fail', 'message': 'No audio provided'})
+    identifier = (request.POST.get('identifier') or '').strip()
+    method = (request.POST.get('method') or 'email').strip()
 
-    api_key = getattr(settings, 'SARVAM_API_KEY', '')
-    if not api_key:
-        return JsonResponse({'status': 'fail', 'message': 'Sarvam API key not configured'})
+    if not identifier:
+        return JsonResponse({'status': 'fail', 'message': 'Please enter your email or phone'})
 
-    try:
-        url = "https://api.sarvam.ai/speech-to-text"
-        headers = {"api-subscription-key": api_key}
-        files = {"file": ('voice.wav', audio_file.read(), 'audio/wav')}
-        data = {
-            "language_code": getattr(settings, 'SARVAM_STT_LANGUAGE', 'ta-IN'),
-            "model": "saarika:v2",
-        }
-
-        resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
-
-        if resp.status_code == 200:
-            result = resp.json()
-            text = result.get('transcript', '') or result.get('text', '')
-            if not text:
-                return JsonResponse({'status': 'fail', 'message': 'No transcript returned'})
-            return JsonResponse({'status': 'ok', 'text': text})
-        else:
-            return JsonResponse({
-                'status': 'fail',
-                'message': f'Sarvam STT error {resp.status_code}',
-                'detail': resp.text[:300],
-            })
-    except Exception as e:
-        print(f"[SARVAM STT ERROR] {e}")
-        return JsonResponse({'status': 'fail', 'message': f'STT error: {str(e)}'})
-
-
-@csrf_exempt
-@login_required
-def ai_text_to_speech(request):
-    """Sarvam Text-to-Speech: text → audio (base64)."""
-    if request.method != 'POST':
-        return JsonResponse({'status': 'fail', 'message': 'POST only'})
-
-    text = (request.POST.get('text') or '').strip()
-    if not text:
-        return JsonResponse({'status': 'fail', 'message': 'No text provided'})
-
-    api_key = getattr(settings, 'SARVAM_API_KEY', '')
-    if not api_key:
-        return JsonResponse({'status': 'fail', 'message': 'Sarvam API key not configured'})
-
-    try:
-        url = "https://api.sarvam.ai/text-to-speech"
-        headers = {
-            "api-subscription-key": api_key,
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "inputs": [text[:500]],
-            "target_language_code": getattr(settings, 'SARVAM_TTS_LANGUAGE', 'ta-IN'),
-            "speaker": getattr(settings, 'SARVAM_TTS_SPEAKER', 'anushka'),
-            "speech_sample_rate": 8000,
-            "enable_preprocessing": True,
-            "model": "bulbul:v1",
-        }
-
-        resp = requests.post(url, headers=headers, json=payload, timeout=60)
-
-        if resp.status_code == 200:
-            result = resp.json()
-            audios = result.get('audios', [])
-            if audios:
-                return JsonResponse({
-                    'status': 'ok',
-                    'audio_base64': audios[0],
-                    'format': 'wav',
-                })
-            return JsonResponse({'status': 'fail', 'message': 'No audio returned'})
-        else:
-            return JsonResponse({
-                'status': 'fail',
-                'message': f'Sarvam TTS error {resp.status_code}',
-                'detail': resp.text[:300],
-            })
-    except Exception as e:
-        print(f"[SARVAM TTS ERROR] {e}")
-        return JsonResponse({'status': 'fail', 'message': f'TTS error: {str(e)}'})
-
-
-@csrf_exempt
-@login_required
-def ai_chat(request):
-    """AI chat fallback (non-WebSocket)."""
-    if request.method != 'POST':
-        return JsonResponse({'status': 'fail', 'message': 'POST only'})
-
-    message = (request.POST.get('message') or '').strip()
-    if not message:
-        return JsonResponse({'status': 'fail', 'message': 'No message'})
-
-    try:
-        ai_user = User.objects.get(username='ChatFlow AI')
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'fail', 'message': 'AI not found'})
-
-    history = []
-    msgs = Message.objects.filter(
-        Q(sender=request.user, receiver=ai_user) | Q(sender=ai_user, receiver=request.user)
-    ).order_by('-timestamp')[:6]
-    for m in reversed(list(msgs)):
-        history.append({
-            'role': 'user' if m.sender_id == request.user.id else 'assistant',
-            'content': m.content or '',
+    user = _find_user_by_identifier(identifier)
+    if user is None:
+        return JsonResponse({
+            'status': 'fail',
+            'message': 'No account found with that email/phone',
         })
 
-    user_msg = Message.objects.create(
-        sender=request.user, receiver=ai_user,
-        content=message, message_type='text',
-    )
+    code = _generate_reset_code()
 
-    ai_text = _ask_ai(message, history)
-
-    ai_msg = Message.objects.create(
-        sender=ai_user, receiver=request.user,
-        content=ai_text, message_type='text',
-    )
-
-    try:
-        channel_layer = get_channel_layer()
-        now = timezone.localtime(ai_msg.timestamp)
-        today = timezone.localtime(timezone.now()).date()
-        msg_date = now.date()
-        if msg_date == today:
-            date_display = 'TODAY'
-        elif msg_date == today - timedelta(days=1):
-            date_display = 'YESTERDAY'
-        else:
-            date_display = now.strftime('%d-%m-%Y')
-
-        payload = {
-            "type": "chat_message",
-            "message": {
-                "id": ai_msg.id,
-                "sender": ai_user.username,
-                "sender_id": ai_user.id,
-                "receiver_id": request.user.id,
-                "content": ai_text,
-                "timestamp": _format_wa_time(now),
-                "date_iso": msg_date.strftime('%Y-%m-%d'),
-                "date_display": date_display,
-                "is_read": False,
-                "message_type": "text",
-                "is_edited": False,
-                "edited_at": "",
-            }
-        }
-        async_to_sync(channel_layer.group_send)(f"user_{request.user.id}", payload)
-    except Exception as e:
-        print(f"[AI BROADCAST ERROR] {e}")
+    request.session['reset_code'] = code
+    request.session['reset_user_id'] = user.id
+    request.session['reset_expires_at'] = (timezone.now() + timezone.timedelta(minutes=10)).isoformat()
+    request.session['reset_method'] = method
+    request.session['reset_identifier'] = identifier
 
     return JsonResponse({
         'status': 'ok',
-        'user_message': {'id': user_msg.id, 'content': message},
-        'ai_reply': {'id': ai_msg.id, 'content': ai_text},
+        'code': code,
+        'method': method,
+        'identifier': identifier,
+        'message': 'Code generated. Copy the 6-digit code shown on screen.',
+    })
+
+
+def reset_password_view(request):
+    """
+    Verify the code from session and set a new password.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'fail', 'message': 'POST only'})
+
+    identifier = (request.POST.get('identifier') or '').strip()
+    code = (request.POST.get('code') or '').strip()
+    new_password = request.POST.get('new_password') or ''
+    confirm_password = request.POST.get('confirm_password') or ''
+
+    if not code or len(code) != 6 or not code.isdigit():
+        return JsonResponse({'status': 'fail', 'message': 'Invalid reset code'})
+    if not new_password or len(new_password) < 6:
+        return JsonResponse({'status': 'fail', 'message': 'Password must be at least 6 characters'})
+    if new_password != confirm_password:
+        return JsonResponse({'status': 'fail', 'message': 'Passwords do not match'})
+
+    session_code = request.session.get('reset_code')
+    session_user_id = request.session.get('reset_user_id')
+    session_expires = request.session.get('reset_expires_at')
+    session_identifier = request.session.get('reset_identifier')
+
+    if not session_code or not session_user_id or not session_expires:
+        return JsonResponse({'status': 'fail', 'message': 'Reset session expired. Please start again.'})
+
+    try:
+        expires_at = timezone.datetime.fromisoformat(session_expires)
+        if timezone.is_naive(expires_at):
+            expires_at = timezone.make_aware(expires_at)
+        if timezone.now() > expires_at:
+            return JsonResponse({'status': 'fail', 'message': 'Reset code expired. Please request a new one.'})
+    except Exception:
+        return JsonResponse({'status': 'fail', 'message': 'Reset session error'})
+
+    if code != session_code:
+        return JsonResponse({'status': 'fail', 'message': 'Incorrect code. Please check and try again.'})
+
+    if identifier and session_identifier and identifier.lower() != session_identifier.lower():
+        return JsonResponse({'status': 'fail', 'message': 'Identifier mismatch. Please start again.'})
+
+    try:
+        user = User.objects.get(id=session_user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'fail', 'message': 'User not found'})
+
+    user.set_password(new_password)
+    user.save()
+
+    for key in ['reset_code', 'reset_user_id', 'reset_expires_at',
+                'reset_method', 'reset_identifier']:
+        request.session.pop(key, None)
+
+    return JsonResponse({
+        'status': 'ok',
+        'message': 'Password reset successfully. Please login with your new password.',
     })
 
 

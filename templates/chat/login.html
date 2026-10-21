@@ -3,6 +3,7 @@
 <head>
     <title>Login - ChatFlow</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,185 +14,1167 @@
             --wa-green: #25D366;
             --wa-green-dark: #128C7E;
             --wa-green-darker: #075E54;
-            --wa-bg: #ECE5DD;
-            --wa-panel: #FFFFFF;
-            --wa-text: #111B21;
-            --wa-text-secondary: #667781;
-            --wa-text-muted: #8696A0;
-            --wa-border: #E9EDEF;
-            --wa-shadow-lg: 0 10px 40px rgba(0,0,0,0.15);
+            --wa-teal: #00A884;
+            --wa-teal-dark: #008069;
+            --wa-bg: #0C1317;
+            --wa-panel: #111B21;
+            --wa-header: #202C33;
+            --wa-hover: #2A3942;
+            --wa-border: #2A3942;
+            --wa-text: #E9EDEF;
+            --wa-text-secondary: #8696A0;
+            --wa-text-muted: #667781;
+            --wa-radius-sm: 7.5px;
             --wa-radius-md: 10px;
             --wa-radius-lg: 14px;
             --wa-radius-full: 999px;
             --wa-font: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --wa-ease: cubic-bezier(0.1, 0.82, 0.25, 1);
+            --wa-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --wa-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             font-family: var(--wa-font);
-            background: linear-gradient(135deg, var(--wa-green-darker), var(--wa-green-dark));
+            background: var(--wa-bg);
+            color: var(--wa-text);
+            min-height: 100vh;
+            font-size: 14.5px;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280' viewBox='0 0 280 280'%3E%3Cg fill='none' stroke='%23000000' stroke-opacity='0.045' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M30 40c8 3 12 10 10 18'/%3E%3Ccircle cx='60' cy='50' r='6'/%3E%3Cpath d='M120 30l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z'/%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            opacity: 0.4;
+            z-index: 0;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 127px;
+            background: #00A884;
+            z-index: -1;
+        }
+
+        .login-wrapper {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
         }
-        .login-container {
+
+        .login-card {
             background: var(--wa-panel);
             border-radius: var(--wa-radius-lg);
-            padding: 40px 30px;
             width: 100%;
-            max-width: 400px;
-            box-shadow: var(--wa-shadow-lg);
+            max-width: 440px;
+            padding: 36px 32px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            animation: cardEnter 0.4s var(--wa-ease-out);
         }
+        @keyframes cardEnter {
+            0% { opacity: 0; transform: translateY(20px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         .logo-area {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-        .logo-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: var(--wa-green-dark);
-            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            margin: 0 auto 16px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
+        .logo-icon { font-size: 32px; color: var(--wa-green); }
         .logo-text {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 26px;
+            font-weight: 600;
             color: var(--wa-text);
-            letter-spacing: -0.5px;
         }
-        .logo-text span { color: var(--wa-green-dark); }
-        .subtitle {
+        .logo-text span { color: var(--wa-green); }
+
+        .login-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--wa-text);
+            margin-top: 8px;
+            margin-bottom: 6px;
+        }
+        .login-subtitle {
+            text-align: center;
             font-size: 13.5px;
             color: var(--wa-text-secondary);
-            margin-top: 6px;
+            margin-bottom: 24px;
         }
-        .error-msg {
-            background: rgba(239, 68, 68, 0.1);
-            color: #EF4444;
+
+        .error-banner {
+            background: rgba(229, 57, 53, 0.12);
+            border: 1px solid rgba(229, 57, 53, 0.3);
+            color: #FF6B6B;
             padding: 10px 14px;
-            border-radius: var(--wa-radius-md);
+            border-radius: var(--wa-radius-sm);
             font-size: 13px;
-            font-weight: 500;
             margin-bottom: 16px;
-            text-align: center;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        form {
             display: flex;
-            flex-direction: column;
-            gap: 14px;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.5;
         }
-        .input-group {
+        .error-banner i { margin-top: 2px; }
+
+        .success-banner {
+            background: rgba(0, 168, 132, 0.12);
+            border: 1px solid rgba(0, 168, 132, 0.3);
+            color: var(--wa-teal);
+            padding: 10px 14px;
+            border-radius: var(--wa-radius-sm);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.5;
+        }
+        .success-banner i { margin-top: 2px; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--wa-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .form-label .required { color: #FF6B6B; }
+
+        .input-wrapper {
             position: relative;
+            display: flex;
+            align-items: center;
         }
-        .input-group i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--wa-text-muted);
-            font-size: 16px;
-        }
-        .input-group input {
+        .input-wrapper input {
             width: 100%;
-            padding: 14px 16px 14px 44px;
-            border: 1px solid var(--wa-border);
+            padding: 12px 14px 12px 42px;
+            border: 1.5px solid var(--wa-border);
             border-radius: var(--wa-radius-md);
-            background: #F9FAFB;
+            background: var(--wa-bg);
             color: var(--wa-text);
             font-size: 14.5px;
             font-family: var(--wa-font);
             outline: none;
-            transition: all 0.15s;
+            transition: border-color 0.15s, background 0.15s;
         }
-        .input-group input::placeholder {
+        .input-wrapper input:focus {
+            border-color: var(--wa-teal);
+            background: var(--wa-header);
+        }
+        .input-wrapper input::placeholder {
             color: var(--wa-text-muted);
         }
-        .input-group input:focus {
-            border-color: var(--wa-green-dark);
-            background: var(--wa-panel);
-            box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.1);
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--wa-text-muted);
+            font-size: 15px;
+            pointer-events: none;
         }
-        button[type="submit"] {
-            background: var(--wa-green-dark);
+
+        /* Password wrapper */
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 46px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 6px 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .password-toggle:hover {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        .field-hint {
+            font-size: 11.5px;
+            color: var(--wa-text-muted);
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .field-error {
+            color: #FF6B6B;
+            font-size: 11.5px;
+            margin-top: 5px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+        .field-error.show { display: flex; }
+
+        .forgot-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+        .forgot-link {
+            font-size: 13px;
+            color: var(--wa-teal);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            padding: 4px 0;
+            font-family: var(--wa-font);
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--wa-teal);
             color: white;
             border: none;
-            padding: 14px;
             border-radius: var(--wa-radius-md);
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             font-family: var(--wa-font);
-            transition: all 0.15s;
+            margin-top: 8px;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .submit-btn:hover:not(:disabled) {
+            background: var(--wa-teal-dark);
+        }
+        .submit-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .submit-btn:disabled {
+            background: var(--wa-border);
+            color: var(--wa-text-muted);
+            cursor: not-allowed;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0 16px;
+            color: var(--wa-text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--wa-border);
+        }
+
+        .signup-link {
+            text-align: center;
+            font-size: 14px;
+            color: var(--wa-text-secondary);
+        }
+        .signup-link a {
+            color: var(--wa-teal);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* ============================================================
+           MODAL — Forgot Password
+           ============================================================ */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: var(--wa-panel);
+            border-radius: var(--wa-radius-lg);
+            width: 100%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: modalEnter 0.3s var(--wa-ease-out);
+        }
+        @keyframes modalEnter {
+            0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--wa-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--wa-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-header h3 i { color: var(--wa-teal); }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin-top: 6px;
+            transition: background 0.15s;
         }
-        button[type="submit"]:hover {
-            background: var(--wa-green-darker);
-        }
-        button[type="submit"]:active {
-            transform: scale(0.98);
-        }
-        .link {
-            text-align: center;
-            margin-top: 20px;
+        .modal-close:hover { background: var(--wa-hover); }
+        .modal-body { padding: 22px; }
+        .modal-body p {
             font-size: 13.5px;
             color: var(--wa-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 18px;
         }
-        .link a {
-            color: var(--wa-green-dark);
+        .modal-footer {
+            padding: 0 22px 22px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--wa-radius-md);
+            border: none;
+            font-size: 14px;
             font-weight: 600;
-            text-decoration: none;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            transition: all 0.15s;
         }
-        .link a:hover {
-            text-decoration: underline;
+        .btn-primary { background: var(--wa-teal); color: white; }
+        .btn-primary:hover { background: var(--wa-teal-dark); }
+        .btn-secondary { background: var(--wa-hover); color: var(--wa-text); }
+        .btn-secondary:hover { background: var(--wa-border); }
+
+        /* Tab switch (Email / Phone) */
+        .forgot-tabs {
+            display: flex;
+            gap: 6px;
+            background: var(--wa-bg);
+            padding: 5px;
+            border-radius: var(--wa-radius-md);
+            margin-bottom: 18px;
         }
+        .forgot-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary);
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: var(--wa-font);
+            border-radius: var(--wa-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+        .forgot-tab.active {
+            background: var(--wa-teal);
+            color: white;
+        }
+        .forgot-tab:not(.active):hover {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        /* Reset code display box */
+        .code-box {
+            background: var(--wa-bg);
+            border: 1.5px dashed var(--wa-teal);
+            border-radius: var(--wa-radius-md);
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .code-box .code-label {
+            font-size: 12px;
+            color: var(--wa-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .code-box .code-value {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--wa-teal);
+            letter-spacing: 6px;
+            user-select: all;
+        }
+        .code-box .code-hint {
+            font-size: 11.5px;
+            color: var(--wa-text-muted);
+            margin-top: 8px;
+        }
+
+        /* OTP input boxes */
+        .otp-inputs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .otp-inputs input {
+            width: 44px;
+            height: 52px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1.5px solid var(--wa-border);
+            border-radius: var(--wa-radius-sm);
+            background: var(--wa-bg);
+            color: var(--wa-text);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .otp-inputs input:focus {
+            border-color: var(--wa-teal);
+            background: var(--wa-header);
+        }
+
+        /* Step indicator */
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--wa-border);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .step-dot.active {
+            background: var(--wa-teal);
+            transform: scale(1.3);
+        }
+
+        /* Strength meter */
+        .strength-meter {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .strength-meter .bar {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--wa-border);
+            transition: background 0.2s;
+        }
+        .strength-meter .bar.weak { background: #FF6B6B; }
+        .strength-meter .bar.medium { background: #FFB300; }
+        .strength-meter .bar.strong { background: var(--wa-teal); }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 22px; }
+            .logo-text { font-size: 22px; }
+            .login-title { font-size: 18px; }
+            .otp-inputs input { width: 38px; height: 46px; font-size: 18px; }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo-area">
-            <div class="logo-icon">
-                <i class="fas fa-comment-dots"></i>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="logo-area">
+                <span class="logo-icon"><i class="fas fa-comment-dots"></i></span>
+                <div class="logo-text">Chat<span>Flow</span></div>
             </div>
-            <div class="logo-text">Chat<span>Flow</span></div>
-            <div class="subtitle">Sign in to continue</div>
-        </div>
 
-        {% if error %}
-        <div class="error-msg">
-            <i class="fas fa-exclamation-circle"></i> {{ error }}
-        </div>
-        {% endif %}
+            <div class="login-title">Welcome back</div>
+            <div class="login-subtitle">Login with username, email, phone, or handle</div>
 
-        <form method="POST">
-            {% csrf_token %}
-            <div class="input-group">
-                <i class="fas fa-user"></i>
-                <input type="text" name="username" placeholder="Username" required autofocus>
+            {% if error %}
+            <div class="error-banner">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error }}</span>
             </div>
-            <div class="input-group">
-                <i class="fas fa-lock"></i>
-                <input type="password" name="password" placeholder="Password" required>
-            </div>
-            <button type="submit">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
-        </form>
+            {% endif %}
 
-        <div class="link">
-            No account? <a href="/register/">Register</a>
+            {% if success %}
+            <div class="success-banner">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ success }}</span>
+            </div>
+            {% endif %}
+
+            <form id="loginForm" method="POST" action="/login/" novalidate>
+                {% csrf_token %}
+
+                <!-- ===== IDENTIFIER ===== -->
+                <div class="form-group">
+                    <label class="form-label" for="identifier">Username / Email / Phone / Handle <span class="required">*</span></label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="identifier" name="identifier" placeholder="Enter username, email, phone, or @handle" required autocomplete="username" autofocus>
+                    </div>
+                    <div class="field-hint">
+                        <span>Use any of: username, email, 10-digit phone, or @handle</span>
+                    </div>
+                    <div class="field-error" id="identifierError">
+                        <i class="fas fa-times-circle"></i>
+                        <span></span>
+                    </div>
+                </div>
+
+                <!-- ===== PASSWORD ===== -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Password <span class="required">*</span></label>
+                    <div class="input-wrapper password-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <button class="password-toggle" type="button" onclick="togglePassword('password', this)" tabindex="-1" title="Show/Hide password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="field-error" id="passwordError">
+                        <i class="fas fa-times-circle"></i>
+                        <span></span>
+                    </div>
+                </div>
+
+                <!-- ===== FORGOT LINK ===== -->
+                <div class="forgot-row">
+                    <button type="button" class="forgot-link" onclick="openForgotModal()">
+                        Forgot password?
+                    </button>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+
+                <div class="divider">or</div>
+
+                <div class="signup-link">
+                    Don't have an account? <a href="/register/">Sign up</a>
+                </div>
+            </form>
         </div>
     </div>
+
+    <!-- ============================================================
+         FORGOT PASSWORD MODAL
+         ============================================================ -->
+    <div class="modal" id="forgotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Reset Password</h3>
+                <button class="modal-close" onclick="closeForgotModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Step indicator -->
+                <div class="steps">
+                    <div class="step-dot active" id="stepDot1"></div>
+                    <div class="step-dot" id="stepDot2"></div>
+                    <div class="step-dot" id="stepDot3"></div>
+                </div>
+
+                <!-- ===== STEP 1: Choose method ===== -->
+                <div id="forgotStep1">
+                    <p>Choose how you'd like to reset your password:</p>
+
+                    <div class="forgot-tabs">
+                        <button type="button" class="forgot-tab active" data-method="email" onclick="selectForgotMethod('email')">
+                            <i class="fas fa-envelope"></i> Email
+                        </button>
+                        <button type="button" class="forgot-tab" data-method="phone" onclick="selectForgotMethod('phone')">
+                            <i class="fas fa-phone"></i> Phone
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" id="forgotIdentifierLabel" for="forgotIdentifier">Email Address <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope input-icon" id="forgotIdentifierIcon"></i>
+                            <input type="text" id="forgotIdentifier" placeholder="Enter your email address">
+                        </div>
+                        <div class="field-error" id="forgotIdentifierError">
+                            <i class="fas fa-times-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== STEP 2: Show code (UI la) ===== -->
+                <div id="forgotStep2" class="hidden">
+                    <p>We've generated a reset code. Copy it and enter it in the next step.</p>
+
+                    <div class="code-box">
+                        <div class="code-label">Your Reset Code</div>
+                        <div class="code-value" id="resetCodeDisplay">------</div>
+                        <div class="code-hint" id="resetCodeHint">This code is shown here for demo purposes.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Enter Reset Code <span class="required">*</span></label>
+                        <div class="otp-inputs" id="otpInputs">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="0">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="1">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="2">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="3">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="4">
+                            <input type="text" maxlength="1" inputmode="numeric" data-idx="5">
+                        </div>
+                        <div class="field-error" id="otpError">
+                            <i class="fas fa-times-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== STEP 3: New password ===== -->
+                <div id="forgotStep3" class="hidden">
+                    <p>Set a new password for your account.</p>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newPassword">New Password <span class="required">*</span></label>
+                        <div class="input-wrapper password-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="newPassword" placeholder="Enter new password (min 6 characters)" minlength="6">
+                            <button class="password-toggle" type="button" onclick="togglePassword('newPassword', this)" tabindex="-1">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="strength-meter" id="strengthMeter">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </div>
+                        <div class="field-error" id="newPasswordError">
+                            <i class="fas fa-times-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newConfirmPassword">Confirm New Password <span class="required">*</span></label>
+                        <div class="input-wrapper password-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="newConfirmPassword" placeholder="Re-enter new password">
+                            <button class="password-toggle" type="button" onclick="togglePassword('newConfirmPassword', this)" tabindex="-1">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="field-error" id="newConfirmPasswordError">
+                            <i class="fas fa-times-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="forgotCancelBtn" onclick="closeForgotModal()">Cancel</button>
+                <button class="btn btn-primary" id="forgotActionBtn" onclick="forgotNextStep()">
+                    Send Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        const $ = function(id) { return document.getElementById(id); };
+
+        // ============================================================
+        // PASSWORD TOGGLE (EYE)
+        // ============================================================
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+
+        // ============================================================
+        // SHOW / CLEAR ERROR
+        // ============================================================
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.querySelector('span').innerText = msg;
+            el.classList.add('show');
+        }
+        function clearError(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('show');
+        }
+
+        // ============================================================
+        // LOGIN FORM VALIDATION
+        // ============================================================
+        $('identifier').addEventListener('input', function() { clearError('identifierError'); });
+        $('password').addEventListener('input', function() { clearError('passwordError'); });
+
+        $('loginForm').addEventListener('submit', function(e) {
+            const idVal = ($('identifier').value || '').trim();
+            const pwdVal = ($('password').value || '').trim();
+            let ok = true;
+
+            if (!idVal) {
+                showError('identifierError', 'Please enter username, email, phone, or handle');
+                ok = false;
+            }
+            if (!pwdVal) {
+                showError('passwordError', 'Please enter your password');
+                ok = false;
+            }
+            if (!ok) {
+                e.preventDefault();
+                return false;
+            }
+
+            $('submitBtn').disabled = true;
+            $('submitBtn').innerHTML = '<span class="spinner"></span> Logging in...';
+            return true;
+        });
+
+        // ============================================================
+        // FORGOT PASSWORD MODAL
+        // ============================================================
+        let forgotMethod = 'email';       // 'email' or 'phone'
+        let forgotCurrentStep = 1;         // 1, 2, 3
+        let forgotIdentifierValue = '';
+        let generatedCode = '';            // UI la kaatanum
+
+        function openForgotModal() {
+            resetForgotModal();
+            $('forgotModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(function() { $('forgotIdentifier').focus(); }, 100);
+        }
+
+        function closeForgotModal() {
+            $('forgotModal').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on backdrop click
+        $('forgotModal').addEventListener('click', function(e) {
+            if (e.target === this) closeForgotModal();
+        });
+        // ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && $('forgotModal').classList.contains('show')) closeForgotModal();
+        });
+
+        function resetForgotModal() {
+            forgotMethod = 'email';
+            forgotCurrentStep = 1;
+            forgotIdentifierValue = '';
+            generatedCode = '';
+
+            // Reset tabs
+            document.querySelectorAll('.forgot-tab').forEach(function(t) {
+                t.classList.toggle('active', t.dataset.method === 'email');
+            });
+
+            // Reset step dots
+            $('stepDot1').classList.add('active');
+            $('stepDot2').classList.remove('active');
+            $('stepDot3').classList.remove('active');
+
+            // Reset step panels
+            $('forgotStep1').classList.remove('hidden');
+            $('forgotStep2').classList.add('hidden');
+            $('forgotStep3').classList.add('hidden');
+
+            // Reset fields
+            $('forgotIdentifier').value = '';
+            $('newPassword').value = '';
+            $('newConfirmPassword').value = '';
+            $('resetCodeDisplay').innerText = '------';
+
+            // Reset label
+            updateForgotLabel();
+
+            // Reset errors
+            clearError('forgotIdentifierError');
+            clearError('otpError');
+            clearError('newPasswordError');
+            clearError('newConfirmPasswordError');
+
+            // Reset OTP inputs
+            document.querySelectorAll('#otpInputs input').forEach(function(inp) {
+                inp.value = '';
+                inp.type = 'text';
+            });
+
+            // Reset action button
+            $('forgotActionBtn').innerText = 'Send Code';
+            $('forgotActionBtn').disabled = false;
+            $('forgotCancelBtn').innerText = 'Cancel';
+        }
+
+        function selectForgotMethod(method) {
+            forgotMethod = method;
+            document.querySelectorAll('.forgot-tab').forEach(function(t) {
+                t.classList.toggle('active', t.dataset.method === method);
+            });
+            updateForgotLabel();
+        }
+
+        function updateForgotLabel() {
+            if (forgotMethod === 'email') {
+                $('forgotIdentifierLabel').innerHTML = 'Email Address <span class="required">*</span>';
+                $('forgotIdentifier').placeholder = 'Enter your email address';
+                $('forgotIdentifierIcon').className = 'fas fa-envelope input-icon';
+            } else {
+                $('forgotIdentifierLabel').innerHTML = 'Phone Number <span class="required">*</span>';
+                $('forgotIdentifier').placeholder = 'Enter 10-digit mobile number';
+                $('forgotIdentifierIcon').className = 'fas fa-phone input-icon';
+            }
+        }
+
+        // ============================================================
+        // OTP INPUT NAVIGATION
+        // ============================================================
+        document.querySelectorAll('#otpInputs input').forEach(function(inp) {
+            inp.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '').slice(0, 1);
+                clearError('otpError');
+                const idx = parseInt(this.dataset.idx);
+                if (this.value && idx < 5) {
+                    document.querySelector('#otpInputs input[data-idx="' + (idx + 1) + '"]').focus();
+                }
+            });
+            inp.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !this.value) {
+                    const idx = parseInt(this.dataset.idx);
+                    if (idx > 0) {
+                        document.querySelector('#otpInputs input[data-idx="' + (idx - 1) + '"]').focus();
+                    }
+                }
+            });
+            inp.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                const digits = paste.replace(/\D/g, '').slice(0, 6).split('');
+                document.querySelectorAll('#otpInputs input').forEach(function(el, i) {
+                    el.value = digits[i] || '';
+                });
+            });
+        });
+
+        function getOtpValue() {
+            let v = '';
+            document.querySelectorAll('#otpInputs input').forEach(function(el) { v += el.value || ''; });
+            return v;
+        }
+
+        // ============================================================
+        // PASSWORD STRENGTH
+        // ============================================================
+        $('newPassword').addEventListener('input', function() {
+            const v = this.value || '';
+            const bars = document.querySelectorAll('#strengthMeter .bar');
+            bars.forEach(function(b) { b.classList.remove('weak', 'medium', 'strong'); });
+            let score = 0;
+            if (v.length >= 6) score++;
+            if (v.length >= 10) score++;
+            if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+            if (/\d/.test(v)) score++;
+            if (/[^A-Za-z0-9]/.test(v)) score++;
+            score = Math.min(score, 4);
+            bars.forEach(function(b, i) {
+                if (i < score) {
+                    if (score <= 2) b.classList.add('weak');
+                    else if (score === 3) b.classList.add('medium');
+                    else b.classList.add('strong');
+                }
+            });
+            clearError('newPasswordError');
+        });
+
+        $('newConfirmPassword').addEventListener('input', function() {
+            clearError('newConfirmPasswordError');
+        });
+
+        // ============================================================
+        // FORGOT PASSWORD — STEP HANDLER
+        // ============================================================
+        function forgotNextStep() {
+            if (forgotCurrentStep === 1) {
+                handleForgotStep1();
+            } else if (forgotCurrentStep === 2) {
+                handleForgotStep2();
+            } else if (forgotCurrentStep === 3) {
+                handleForgotStep3();
+            }
+        }
+
+        // -------- STEP 1: Send code (generate UI code) --------
+        async function handleForgotStep1() {
+            const val = ($('forgotIdentifier').value || '').trim();
+
+            if (forgotMethod === 'email') {
+                if (!val) {
+                    showError('forgotIdentifierError', 'Please enter your email');
+                    return;
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    showError('forgotIdentifierError', 'Please enter a valid email address');
+                    return;
+                }
+            } else {
+                if (!/^\d{10}$/.test(val)) {
+                    showError('forgotIdentifierError', 'Phone must be exactly 10 digits');
+                    return;
+                }
+            }
+
+            clearError('forgotIdentifierError');
+            forgotIdentifierValue = val;
+
+            // Call backend to generate code
+            $('forgotActionBtn').disabled = true;
+            $('forgotActionBtn').innerHTML = '<span class="spinner"></span> Sending...';
+
+            try {
+                const fd = new FormData();
+                fd.append('identifier', val);
+                fd.append('method', forgotMethod);
+                fd.append('csrfmiddlewaretoken', getCSRF());
+
+                const res = await fetch('/forgot-password/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCSRF() },
+                    body: fd,
+                });
+                const data = await res.json();
+
+                if (data.status !== 'ok') {
+                    showError('forgotIdentifierError', data.message || 'Something went wrong');
+                    $('forgotActionBtn').disabled = false;
+                    $('forgotActionBtn').innerText = 'Send Code';
+                    return;
+                }
+
+                // Backend returns code for UI display
+                generatedCode = data.code || '';
+                $('resetCodeDisplay').innerText = generatedCode.split('').join(' ');
+                $('resetCodeHint').innerText = forgotMethod === 'email'
+                    ? 'Check your email at ' + val + ' (demo: code shown above)'
+                    : 'Check your phone at +91 ' + val + ' (demo: code shown above)';
+
+                // Move to step 2
+                forgotCurrentStep = 2;
+                $('stepDot1').classList.remove('active');
+                $('stepDot2').classList.add('active');
+                $('forgotStep1').classList.add('hidden');
+                $('forgotStep2').classList.remove('hidden');
+                $('forgotActionBtn').innerText = 'Verify Code';
+                $('forgotActionBtn').disabled = false;
+
+                setTimeout(function() {
+                    document.querySelector('#otpInputs input[data-idx="0"]').focus();
+                }, 100);
+
+            } catch (err) {
+                showError('forgotIdentifierError', 'Network error. Please try again.');
+                $('forgotActionBtn').disabled = false;
+                $('forgotActionBtn').innerText = 'Send Code';
+            }
+        }
+
+        // -------- STEP 2: Verify code --------
+        function handleForgotStep2() {
+            const entered = getOtpValue();
+            if (entered.length !== 6) {
+                showError('otpError', 'Please enter the 6-digit code');
+                return;
+            }
+            if (entered !== generatedCode) {
+                showError('otpError', 'Incorrect code. Please check and try again.');
+                return;
+            }
+            clearError('otpError');
+
+            // Move to step 3
+            forgotCurrentStep = 3;
+            $('stepDot2').classList.remove('active');
+            $('stepDot3').classList.add('active');
+            $('forgotStep2').classList.add('hidden');
+            $('forgotStep3').classList.remove('hidden');
+            $('forgotActionBtn').innerText = 'Reset Password';
+            setTimeout(function() { $('newPassword').focus(); }, 100);
+        }
+
+        // -------- STEP 3: Set new password --------
+        async function handleForgotStep3() {
+            const np = ($('newPassword').value || '').trim();
+            const cp = ($('newConfirmPassword').value || '').trim();
+
+            if (np.length < 6) {
+                showError('newPasswordError', 'Password must be at least 6 characters');
+                return;
+            }
+            if (np !== cp) {
+                showError('newConfirmPasswordError', 'Passwords do not match');
+                return;
+            }
+            clearError('newPasswordError');
+            clearError('newConfirmPasswordError');
+
+            $('forgotActionBtn').disabled = true;
+            $('forgotActionBtn').innerHTML = '<span class="spinner"></span> Resetting...';
+
+            try {
+                const fd = new FormData();
+                fd.append('identifier', forgotIdentifierValue);
+                fd.append('code', generatedCode);
+                fd.append('new_password', np);
+                fd.append('confirm_password', cp);
+                fd.append('csrfmiddlewaretoken', getCSRF());
+
+                const res = await fetch('/reset-password/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCSRF() },
+                    body: fd,
+                });
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    closeForgotModal();
+                    showTopBanner('Password reset successfully. Please login with your new password.', 'success');
+                    // Pre-fill identifier
+                    $('identifier').value = forgotIdentifierValue;
+                    $('password').focus();
+                } else {
+                    showError('newPasswordError', data.message || 'Failed to reset password');
+                    $('forgotActionBtn').disabled = false;
+                    $('forgotActionBtn').innerText = 'Reset Password';
+                }
+            } catch (err) {
+                showError('newPasswordError', 'Network error. Please try again.');
+                $('forgotActionBtn').disabled = false;
+                $('forgotActionBtn').innerText = 'Reset Password';
+            }
+        }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        function getCSRF() {
+            const n = 'csrftoken=';
+            const cs = document.cookie.split(';');
+            for (let i = 0; i < cs.length; i++) {
+                const c = cs[i].trim();
+                if (c.startsWith(n)) return c.substring(n.length);
+            }
+            return '';
+        }
+
+        function showTopBanner(msg, type) {
+            const existing = document.querySelector('.success-banner, .error-banner');
+            if (existing) existing.remove();
+
+            const div = document.createElement('div');
+            div.className = type === 'success' ? 'success-banner' : 'error-banner';
+            div.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i><span>' + msg + '</span>';
+            const form = $('loginForm');
+            form.parentNode.insertBefore(div, form);
+            setTimeout(function() { div.remove(); }, 6000);
+        }
+    </script>
 </body>
 </html>

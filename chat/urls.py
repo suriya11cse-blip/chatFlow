@@ -72,4 +72,8 @@ urlpatterns = [
     path('ai/chat/', views.ai_chat, name='ai_chat'),
     path('ai/speech-to-text/', views.ai_speech_to_text, name='ai_speech_to_text'),
     path('ai/text-to-speech/', views.ai_text_to_speech, name='ai_text_to_speech'),
+        # ===== AI (Sarvam Voice + Groq Text) =====
+    path('ai/chat/', views.ai_chat, name='ai_chat'),
+    path('ai/speech-to-text/', views.ai_speech_to_text, name='ai_speech_to_text'),
+    path('ai/text-to-speech/', views.ai_text_to_speech, name='ai_text_to_speech'),
 ]

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'chat',
+    'chat_ai',              # 🆕 ADD THIS LINE
     'django_celery_beat',
 ]
 
