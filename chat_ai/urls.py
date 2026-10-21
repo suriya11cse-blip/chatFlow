@@ -9,8 +9,7 @@ urlpatterns = [
     path('conversations/', views.ai_conversations_list, name='ai_conversations'),
     path('conversations/<int:conv_id>/', views.ai_conversation_detail, name='ai_conversation_detail'),
 
-    # Summarize
-    path('summarize/', views.summarize_chat, name='ai_summarize'),
+    
 
     # Smart Reply
     path('smart-replies/', views.get_smart_replies, name='ai_smart_replies'),

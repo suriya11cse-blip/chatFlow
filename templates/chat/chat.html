@@ -3243,27 +3243,83 @@
         let aiChunks = [];
         let aiRecording = false;
 
-        async function startAiRecording() {
-            if (aiRecording) return;
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                aiChunks = [];
-                aiRecorder = new MediaRecorder(stream);
-                aiRecorder.ondataavailable = function(e) { if (e.data.size > 0) aiChunks.push(e.data); };
-                aiRecorder.onstop = async function() {
-                    stream.getTracks().forEach(function(t) { t.stop(); });
-                    const blob = new Blob(aiChunks, { type: 'audio/wav' });
-                    if (blob.size < 1000) { showToast('Too short'); return; }
-                    await processAiSpeech(blob);
-                };
-                aiRecorder.start();
-                aiRecording = true;
-                document.getElementById('micBtn').classList.add('recording');
-                document.getElementById('recordingOverlay').classList.add('show');
-            } catch (err) {
-                alert('Mic denied: ' + err.message);
+async function startAiRecording() {
+    if (aiRecording) {
+        stopAiRecording();
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        aiChunks = [];
+        aiRecorder = new MediaRecorder(stream);
+        
+        aiRecorder.ondataavailable = function(e) { 
+            if (e.data.size > 0) aiChunks.push(e.data); 
+        };
+        
+        aiRecorder.onstop = async function() {
+            stream.getTracks().forEach(function(t) { t.stop(); });
+            const blob = new Blob(aiChunks, { type: 'audio/webm' }); 
+            
+            if (blob.size < 1000) { 
+                showToast('Too short'); 
+                return; 
             }
-        }
+            await processAiSpeech(blob);
+        };
+        
+        aiRecorder.start();
+        aiRecording = true;
+        document.getElementById('micBtn').classList.add('recording');
+        document.getElementById('recordingOverlay').classList.add('show');
+        
+        // ⚠️ Timer Logic (Fast-a run aagama irukka)
+        const overlayTime = document.getElementById('recordingTimeOverlay');
+        let startTime = Date.now();
+        
+        if (window._aiRecTimer) clearInterval(window._aiRecTimer);
+        
+        window._aiRecTimer = setInterval(function() {
+            let ms = Date.now() - startTime;
+            let s = Math.floor(ms / 1000);
+            let min = Math.floor(s / 60);
+            let sec = s % 60;
+            overlayTime.innerText = min + ':' + (sec < 30 ? '0' : '') + sec;
+        }, 1000); // ⚠️ 1 second ku oru thadava than update aagum
+        
+    } catch (err) {
+        alert('Mic denied: ' + err.message);
+    }
+}
+
+function stopAiRecording() {
+    if (!aiRecording || !aiRecorder) return;
+    aiRecording = false;
+    clearInterval(window._aiRecTimer);
+    
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('recordingOverlay').classList.remove('show');
+    document.getElementById('recordingTimeOverlay').innerText = '0:00';
+    
+    if (aiRecorder.state !== 'inactive') {
+        aiRecorder.stop(); // Ithu onstop-a trigger pannum
+    }
+}   
+
+function stopAiRecording() {
+    if (!aiRecording || !aiRecorder) return;
+    aiRecording = false;
+    clearInterval(window._aiRecTimer);
+    
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('recordingOverlay').classList.remove('show');
+    document.getElementById('recordingTimeOverlay').innerText = '0:00';
+    
+    if (aiRecorder.state !== 'inactive') {
+        aiRecorder.stop(); // Ithu onstop-a trigger pannum
+    }
+}
 
         function stopAiRecording() {
             if (!aiRecording || !aiRecorder) return;
@@ -3273,27 +3329,33 @@
             if (aiRecorder.state !== 'inactive') aiRecorder.stop();
         }
 
-        async function processAiSpeech(blob) {
-            showToast('🎤 Processing voice...');
-            const fd = new FormData();
-            fd.append('audio', blob, 'voice.wav');
-            fd.append('csrfmiddlewaretoken', getCSRF());
-            try {
-                const res = await fetch('/ai/speech-to-text/', { method: 'POST', body: fd });
-                const data = await res.json();
-                if (data.status === 'ok' && data.text) {
-                    const input = document.getElementById('msgInput');
-                    input.value = data.text;
-                    toggleMicSend();
-                    updateFormattingHint();
-                    setTimeout(function() { sendMessage(); }, 300);
-                } else {
-                    showToast(data.message || 'Speech not recognized');
-                }
-            } catch (err) {
-                showToast('STT failed: ' + err.message);
-            }
+async function processAiSpeech(blob) {
+    showToast('🎤 Processing voice...');
+    const fd = new FormData();
+    fd.append('audio', blob, 'voice.webm');
+    
+    try {
+        const res = await fetch('/ai/voice-to-text/', { 
+            method: 'POST', 
+            headers: { 'X-CSRFToken': getCSRF() }, 
+            body: fd 
+        });
+        
+        const data = await res.json();
+        
+        if (data.status === 'ok' && data.text) {
+            const input = document.getElementById('msgInput');
+            input.value = data.text;
+            toggleMicSend();
+            updateFormattingHint();
+            setTimeout(function() { sendMessage(); }, 300);
+        } else {
+            showToast(data.message || 'Speech not recognized');
         }
+    } catch (err) {
+        showToast('STT failed: ' + err.message);
+    }
+}
 
         async function playAiTTS(text) {
             if (!text) return;
@@ -3744,30 +3806,21 @@
             } catch (err) { showToast('Upload failed'); }
         }
 
-        micBtn.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            if (activeIsAi) startAiRecording();
-            else startRecording();
-        });
-        micBtn.addEventListener('mouseup', function(e) {
-            e.preventDefault();
-            if (activeIsAi) stopAiRecording();
-            else stopRecording();
-        });
-        micBtn.addEventListener('mouseleave', function() {
-            if (activeIsAi && aiRecording) stopAiRecording();
-            else if (isRecording) stopRecording();
-        });
-        micBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            if (activeIsAi) startAiRecording();
-            else startRecording();
-        });
-        micBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            if (activeIsAi) stopAiRecording();
-            else stopRecording();
-        });
+        // Mic Click pannina start/stop aagum
+micBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (activeIsAi) {
+        if (aiRecording) {
+            stopAiRecording();
+        } else {
+            startAiRecording();
+        }
+    } else {
+        // Normal voice message recording (if needed)
+        if (isRecording) stopRecording();
+        else startRecording();
+    }
+});
 
         // ============================================================
         // AUDIO PLAYBACK
@@ -4130,6 +4183,53 @@
             }
 
             loadMessages(userId);
+                        if (isAi) {
+                // ⚠️ Load AI History
+                fetch('/ai/conversations/')
+                    .then(r => r.json())
+                    .then(data => {
+                        const area = document.getElementById('chatArea');
+                        area.innerHTML = '';
+                        
+                        if (data.status === 'ok' && data.conversations.length > 0) {
+                            // Latest conversation load pannuvom
+                            const convId = data.conversations[0].id;
+                            fetch('/ai/conversations/' + convId + '/')
+                                .then(r => r.json())
+                                .then(convData => {
+                                    if (convData.status === 'ok') {
+                                        const msgs = convData.conversation.messages;
+                                        let lastDate = null;
+                                        
+                                        msgs.forEach(m => {
+                                            const todayIso = new Date().toISOString().slice(0, 10);
+                                            if (todayIso !== lastDate) {
+                                                const sep = document.createElement('div');
+                                                sep.className = 'date-separator';
+                                                sep.innerHTML = '<span>TODAY</span>';
+                                                area.appendChild(sep);
+                                                lastDate = todayIso;
+                                            }
+                                            
+                                            appendMessage({
+                                                id: 'ai-hist-' + Date.now() + Math.random(),
+                                                content: m.content,
+                                                timestamp: new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                                                date_iso: todayIso, date_display: 'TODAY',
+                                                is_mine: m.role === 'user',
+                                                deleted_for_everyone: false,
+                                                reply_to: null, is_starred: false, is_read: true,
+                                                message_type: 'text', call_duration: '',
+                                                reactions: [], expires_at: null,
+                                            });
+                                        });
+                                        
+                                        area.scrollTop = area.scrollHeight;
+                                    }
+                                });
+                        }
+                    });
+            }
             if (!activeIsAi) {
                 loadDisappearing(userId);
                 loadPinned();
@@ -4548,6 +4648,55 @@
         // MESSAGES
         // ============================================================
         async function loadMessages(userId) {
+            if (activeIsAi) {
+                // ⚠️ AI History Load Here
+                try {
+                    const convRes = await fetch('/ai/conversations/');
+                    const convData = await convRes.json();
+                    
+                    if (convData.status === 'ok' && convData.conversations.length > 0) {
+                        const convId = convData.conversations[0].id;
+                        const msgRes = await fetch('/ai/conversations/' + convId + '/');
+                        const msgData = await msgRes.json();
+                        
+                        if (msgData.status === 'ok') {
+                            const area = document.getElementById('chatArea');
+                            area.innerHTML = '';
+                            const msgs = msgData.conversation.messages;
+                            let lastDate = null;
+                            
+                            msgs.forEach(m => {
+                                const msgDate = new Date(m.created_at).toISOString().slice(0, 10);
+                                if (msgDate !== lastDate) {
+                                    const sep = document.createElement('div');
+                                    sep.className = 'date-separator';
+                                    sep.innerHTML = '<span>TODAY</span>';
+                                    area.appendChild(sep);
+                                    lastDate = msgDate;
+                                }
+                                
+                                appendMessage({
+                                    id: 'ai-hist-' + Date.now() + Math.random(),
+                                    content: m.content,
+                                    timestamp: new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                                    date_iso: msgDate, date_display: 'TODAY',
+                                    is_mine: m.role === 'user',
+                                    deleted_for_everyone: false, reply_to: null, is_starred: false, is_read: true,
+                                    message_type: 'text', call_duration: '', reactions: [], expires_at: null,
+                                });
+                            });
+                            area.scrollTop = area.scrollHeight;
+                        }
+                    } else {
+                        document.getElementById('chatArea').innerHTML = '<div class="empty-state"><div class="icon">🤖</div><div class="text">ChatFlow AI</div></div>';
+                    }
+                } catch (err) {
+                    console.error("AI Load Error:", err);
+                }
+                return; // ⚠️ Normal load skip pannum
+            }
+
+            // ===== NORMAL USER CHAT LOAD =====
             const res = await fetch('/messages/' + userId + '/');
             const data = await res.json();
             renderMessages(data.messages);
@@ -5087,57 +5236,49 @@
             if (activeIsAi && activeUserId) {
                 const todayIso = new Date().toISOString().slice(0, 10);
                 addDateSeparatorIfNeeded({ date_iso: todayIso, date_display: 'TODAY' });
+                
                 appendMessage({
-                    id: 'temp-' + Date.now(),
-                    content: content,
+                    id: 'temp-' + Date.now(), content: content,
                     timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    date_iso: todayIso, date_display: 'TODAY',
-                    is_mine: true, deleted_for_everyone: false,
-                    reply_to: null, is_starred: false, is_read: false,
-                    message_type: 'text', call_duration: '',
+                    date_iso: todayIso, date_display: 'TODAY', is_mine: true,
+                    deleted_for_everyone: false, reply_to: null, is_starred: false, is_read: false,
+                    message_type: 'text', call_duration: '', reactions: [], expires_at: null,
                 });
+                
                 const area = document.getElementById('chatArea');
                 area.scrollTop = area.scrollHeight;
-                input.value = '';
-                toggleMicSend();
-                updateFormattingHint();
+                input.value = ''; toggleMicSend(); updateFormattingHint();
+                
                 const status = document.getElementById('headerStatus');
                 status.classList.add('typing-active');
                 status.innerHTML = '🤖 AI is typing<span class="typing-dots"><span></span><span></span><span></span></span>';
+                
                 const fd = new FormData();
                 fd.append('message', content);
                 fd.append('csrfmiddlewaretoken', getCSRF());
+                
                 fetch('/ai/chat/', {
-    method: 'POST',
-    headers: { 'X-CSRFToken': getCSRF() },
-    body: fd,
-})
-.then(r => r.json())
-.then(data => {
-    status.classList.remove('typing-active');
-    status.innerText = '🤖 AI assistant';
-    
-    if (data.status === 'ok') {
-        // --- NEW CODE: reply-a UI la add pannum ---
-        const todayIso = new Date().toISOString().slice(0, 10);
-        addDateSeparatorIfNeeded({ date_iso: todayIso, date_display: 'TODAY' });
-        
-        appendMessage({
-            id: data.conversation_id || Date.now(), // Temp ID
-            content: data.reply,
-            timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            date_iso: todayIso, date_display: 'TODAY',
-            is_mine: false, 
-            deleted_for_everyone: false,
-            reply_to: null, is_starred: false, is_read: false,
-            message_type: 'text', call_duration: '',
-        });
-        const area = document.getElementById('chatArea');
-        area.scrollTop = area.scrollHeight;
-    } else {
-        showToast(data.message || 'AI failed');
-    }
-})
+                    method: 'POST', headers: { 'X-CSRFToken': getCSRF() }, body: fd,
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    status.classList.remove('typing-active');
+                    status.innerText = '🤖 AI assistant';
+                    
+                    if (data.status === 'ok') {
+                        appendMessage({
+                            id: data.ai_message_id || ('ai-' + Date.now()), content: data.reply,
+                            timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                            date_iso: todayIso, date_display: 'TODAY', is_mine: false,
+                            deleted_for_everyone: false, reply_to: null, is_starred: false, is_read: false,
+                            message_type: 'text', call_duration: '', reactions: [], expires_at: null,
+                        });
+                        area.scrollTop = area.scrollHeight;
+                        if (data.reply) playAiTTS(data.reply);
+                    } else {
+                        showToast(data.message || 'AI failed');
+                    }
+                })
                 .catch(function(err) {
                     status.classList.remove('typing-active');
                     status.innerText = '🤖 AI assistant';
@@ -5173,7 +5314,7 @@
             updateFormattingHint();
         }
 
-        let typingDebounce = null;
+        
         function sendTyping() {
             if (!socket || socket.readyState !== 1) return;
             if (currentRoomId) socket.send(JSON.stringify({ action: 'group_typing', room_id: currentRoomId }));
@@ -7115,15 +7256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
-<div class="ai-modal" id="aiSummaryModal" style="display: none;">
-    <div class="ai-modal-content">
-        <div class="ai-modal-header">
-            <span><i class="fas fa-file-alt ai-icon"></i> Chat Summary</span>
-            <button onclick="closeAiModal('aiSummaryModal')" style="background: transparent; border: none; cursor: pointer; font-size: 18px; color: var(--wa-text-secondary);"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="ai-modal-body" id="aiSummaryBody"></div>
-    </div>
-</div>
+
 `);
     }
 
@@ -7221,16 +7354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function openAiModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
 function closeAiModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
 
-async function doSummarize() {
-    if (!activeUserId && !currentRoomId) { showToast('Open a chat first'); return; }
-    openAiModal('aiSummaryModal');
-    const body = document.getElementById('aiSummaryBody');
-    body.innerHTML = '<div class="translate-loading"><div class="ai-spinner"></div> &nbsp; Generating summary...</div>';
-    try {
-        const res = await fetch('/ai/summarize/', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
-            body: JSON.stringify({ user_id: activeUserId || null, room_id: currentRoomId || null, limit: 100 }),
-        });
+);
         const data = await res.json();
         if (data.status === 'ok') body.innerHTML = `<div class="translate-label">${data.count} messages</div><div class="summary-text">${data.summary}</div>`;
         else body.innerHTML = `<div style="color:#E53935;">${data.message || 'Failed'}</div>`;
