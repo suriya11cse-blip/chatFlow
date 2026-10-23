@@ -29,6 +29,12 @@ ALLOWED_HOSTS = os.environ.get(
     'ALLOWED_HOSTS',
     '127.0.0.1,localhost'
 ).split(',')
+# ============================================================
+# CSRF TRUSTED ORIGINS (Fix for Render Deploy)
+# ============================================================
+CSRF_TRUSTED_ORIGINS = [
+    'https://chatflow-nq3m.onrender.com',
+]
 
 
 # ============================================================
