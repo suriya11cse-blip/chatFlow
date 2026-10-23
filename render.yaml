@@ -1,0 +1,89 @@
+services:
+  # 1. Web Service (Django + Daphne)
+  - type: web
+    name: chatflow
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "daphne chatapp.asgi:application --port $PORT --bind 0.0.0.0"
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: TIME_ZONE
+        value: Asia/Kolkata
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_STT_LANGUAGE
+        value: ta-IN
+      - key: SARVAM_TTS_LANGUAGE
+        value: ta-IN
+      - key: SARVAM_TTS_SPEAKER
+        value: anushka
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: chatflow-redis
+          property: connectionString
+
+  # 2. Redis (Channels + Celery)
+  - type: redis
+    name: chatflow-redis
+    plan: free
+    ipAllowList: []
+
+  # 3. Celery Worker
+  - type: worker
+    name: chatflow-worker
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A chatapp worker -l info -P solo"
+    plan: free
+    envVars:
+      - fromGroup: chatflow-env
+
+  # 4. Celery Beat
+  - type: worker
+    name: chatflow-beat
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A chatapp beat -l info"
+    plan: free
+    envVars:
+      - fromGroup: chatflow-env
+
+envVarGroups:
+  - name: chatflow-env
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: TIME_ZONE
+        value: Asia/Kolkata
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_STT_LANGUAGE
+        value: ta-IN
+      - key: SARVAM_TTS_LANGUAGE
+        value: ta-IN
+      - key: SARVAM_TTS_SPEAKER
+        value: anushka
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: chatflow-redis
+          property: connectionString

@@ -9,6 +9,7 @@ import os
 import glob
 import tempfile
 import subprocess
+import requests
 import re
 from datetime import timedelta
 
@@ -43,9 +44,6 @@ def _get_or_create_ai_settings(user):
     return obj
 
 
-# ============================================================
-# AI CHAT (Single Conversation + Fast + DB Store)
-# ============================================================
 @login_required
 @require_POST
 def ai_chat(request):
@@ -61,23 +59,45 @@ def ai_chat(request):
     if not user_text:
         return JsonResponse({'status': 'fail', 'message': 'Empty message'})
 
-    # ⚠️ FIX: Ovoru user-ku Oru Single Conversation Mattum
+    # 1. Get or Create Conversation
     conv, created = AIConversation.objects.get_or_create(
         user=request.user,
         defaults={'title': 'ChatFlow AI'}
     )
 
-    # 1. Save User Message
     AIMessage.objects.create(conversation=conv, role='user', content=user_text)
 
-    # 2. Get History (Last 15 messages)
     history = []
-    for m in conv.messages.all().order_by('-created_at')[:15]:
+    for m in conv.messages.all().order_by('-created_at')[:10]:
         history.insert(0, {'role': m.role, 'content': m.content})
 
-    # 3. Auto Language Detect
+    # ⚠️ 2. WEB SEARCH (DuckDuckGo API)
+    search_result = ""
+    try:
+        search_url = f"https://api.duckduckgo.com/?q={user_text}&format=json&no_html=1"
+        res = requests.get(search_url, timeout=5)
+        search_data = res.json()
+        
+        if search_data.get('AbstractText'):
+            search_result = f"Recent info: {search_data['AbstractText']}"
+        elif search_data.get('RelatedTopics'):
+            topics = [t['Text'] for t in search_data['RelatedTopics'][:3] if 'Text' in t]
+            search_result = f"Recent info: {' '.join(topics)}"
+    except Exception as e:
+        print(f"[Web Search Error] {e}")
+
+    # ⚠️ 3. LANGUAGE DETECT & SYSTEM PROMPT
     is_tamil = bool(re.search(r'[\u0B80-\u0BFF]', user_text))
-    system_prompt = "You are ChatFlow AI, a friendly assistant. Keep replies short and conversational."
+    
+    system_prompt = (
+        "You are ChatFlow AI, a friendly assistant. "
+        "Current date is October 2026. "
+        "Use the latest info provided below to answer the user accurately. "
+    )
+    
+    if search_result:
+        system_prompt += f"\n[LATEST DATA]: {search_result}\n"
+        
     if is_tamil:
         system_prompt += " The user is speaking in Tamil. You MUST reply in Tamil."
     else:
@@ -85,7 +105,7 @@ def ai_chat(request):
 
     messages = [{'role': 'system', 'content': system_prompt}] + history
 
-    # 4. Call Groq API (Fast Model)
+    # 4. Call Groq API
     try:
         reply = groq_service.chat_completion(
             messages, 
@@ -99,8 +119,6 @@ def ai_chat(request):
 
     # 5. Save AI Reply
     ai_msg = AIMessage.objects.create(conversation=conv, role='assistant', content=reply)
-    
-    # 6. Update conversation timestamp
     conv.save()
 
     return JsonResponse({
@@ -109,6 +127,8 @@ def ai_chat(request):
         'conversation_id': conv.id,
         'ai_message_id': ai_msg.id,
     })
+
+
 
 
 @login_required

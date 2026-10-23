@@ -66,3 +66,13 @@ db_backup*.sqlite3
 models_backup.py
 update_chat.py
 verify.ps1
+fix_*.py
+remove_summary.py
+update_html.py
+add_pwa.py
+create_icon.py
+fix_*.py
+remove_summary.py
+update_html.py
+update_chat.py
+verify.ps1
